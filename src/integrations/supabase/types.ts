@@ -14,16 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          age: number
+          created_at: string
+          email: string
+          full_name: string
+          height: number
+          id: string
+          initial_weight: number
+          role: Database["public"]["Enums"]["user_role"]
+          sex: Database["public"]["Enums"]["user_sex"]
+          updated_at: string
+        }
+        Insert: {
+          age: number
+          created_at?: string
+          email: string
+          full_name: string
+          height: number
+          id: string
+          initial_weight: number
+          role?: Database["public"]["Enums"]["user_role"]
+          sex: Database["public"]["Enums"]["user_sex"]
+          updated_at?: string
+        }
+        Update: {
+          age?: number
+          created_at?: string
+          email?: string
+          full_name?: string
+          height?: number
+          id?: string
+          initial_weight?: number
+          role?: Database["public"]["Enums"]["user_role"]
+          sex?: Database["public"]["Enums"]["user_sex"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_goals: {
+        Row: {
+          created_at: string
+          goal_type: Database["public"]["Enums"]["goal_type"]
+          id: string
+          start_date: string
+          target_weight: number
+          total_weeks: number
+          updated_at: string
+          user_id: string
+          weekly_variation_percent: number
+        }
+        Insert: {
+          created_at?: string
+          goal_type: Database["public"]["Enums"]["goal_type"]
+          id?: string
+          start_date?: string
+          target_weight: number
+          total_weeks?: number
+          updated_at?: string
+          user_id: string
+          weekly_variation_percent: number
+        }
+        Update: {
+          created_at?: string
+          goal_type?: Database["public"]["Enums"]["goal_type"]
+          id?: string
+          start_date?: string
+          target_weight?: number
+          total_weeks?: number
+          updated_at?: string
+          user_id?: string
+          weekly_variation_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_updates: {
+        Row: {
+          body_fat_percentage: number | null
+          created_at: string
+          hip_circumference: number | null
+          id: string
+          neck_circumference: number | null
+          notes: string | null
+          photo_url: string | null
+          updated_at: string
+          user_id: string
+          waist_circumference: number | null
+          week_number: number
+          weight: number
+        }
+        Insert: {
+          body_fat_percentage?: number | null
+          created_at?: string
+          hip_circumference?: number | null
+          id?: string
+          neck_circumference?: number | null
+          notes?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          user_id: string
+          waist_circumference?: number | null
+          week_number: number
+          weight: number
+        }
+        Update: {
+          body_fat_percentage?: number | null
+          created_at?: string
+          hip_circumference?: number | null
+          id?: string
+          neck_circumference?: number | null
+          notes?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+          waist_circumference?: number | null
+          week_number?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_updates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_body_fat_navy: {
+        Args: {
+          p_height: number
+          p_hip?: number
+          p_neck: number
+          p_sex: Database["public"]["Enums"]["user_sex"]
+          p_waist: number
+        }
+        Returns: number
+      }
     }
     Enums: {
-      [_ in never]: never
+      goal_type: "weight_loss" | "muscle_gain"
+      user_role: "mentee" | "mentor"
+      user_sex: "male" | "female"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +296,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      goal_type: ["weight_loss", "muscle_gain"],
+      user_role: ["mentee", "mentor"],
+      user_sex: ["male", "female"],
+    },
   },
 } as const
