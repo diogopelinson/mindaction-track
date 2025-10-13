@@ -1,19 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { LogOut, TrendingUp, Camera, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   const [currentWeek] = useState(10);
+  const [profile, setProfile] = useState<any>(null);
   
-  // Mock data - will be replaced with real data from Lovable Cloud
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+
+      // Fetch user profile
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "Erro ao carregar perfil",
+          description: "Não foi possível carregar seus dados.",
+          variant: "destructive",
+        });
+      } else {
+        setProfile(profileData);
+      }
+
+      setIsLoading(false);
+    };
+
+    checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/auth');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
+  
+  // Mock data - will be replaced with real data from database
   const userData = {
-    name: "Joyce Alves",
-    initialWeight: 64.5,
+    name: profile?.full_name || "Usuário",
+    initialWeight: profile?.initial_weight || 64.5,
     currentWeight: 66.0,
     targetWeight: 65.7,
     minWeight: 65.5,
@@ -48,9 +97,35 @@ const Dashboard = () => {
   const progressZone = getProgressZone();
   const progressPercentage = ((currentWeek / 24) * 100);
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Até logo!",
+        description: "Você foi desconectado com sucesso.",
+      });
+      navigate('/');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse">
+            <img src={logo} alt="MindAction Club" className="w-24 h-24 mx-auto mb-4" />
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

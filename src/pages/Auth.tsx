@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,29 +8,106 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import logo from "@/assets/logo.png";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/dashboard');
+      }
+    };
+    checkUser();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: Implement authentication with Lovable Cloud
-    setTimeout(() => {
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.session) {
+        toast({
+          title: "Bem-vindo de volta!",
+          description: "Login realizado com sucesso.",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro no login",
+        description: error.message || "Não foi possível fazer login. Verifique suas credenciais.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: Implement signup with Lovable Cloud
-    setTimeout(() => {
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const fullName = formData.get('fullName') as string;
+    const sex = formData.get('sex') as string;
+    const age = parseInt(formData.get('age') as string);
+    const height = parseFloat(formData.get('height') as string);
+    const initialWeight = parseFloat(formData.get('initialWeight') as string);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: fullName,
+            sex,
+            age,
+            height,
+            initial_weight: initialWeight,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.session) {
+        toast({
+          title: "Conta criada!",
+          description: "Bem-vindo ao MindAction Club!",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro no cadastro",
+        description: error.message || "Não foi possível criar sua conta. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
@@ -72,6 +149,7 @@ const Auth = () => {
                     <Label htmlFor="login-email">E-mail</Label>
                     <Input
                       id="login-email"
+                      name="email"
                       type="email"
                       placeholder="seu@email.com"
                       required
@@ -82,6 +160,7 @@ const Auth = () => {
                     <Label htmlFor="login-password">Senha</Label>
                     <Input
                       id="login-password"
+                      name="password"
                       type="password"
                       placeholder="••••••••"
                       required
@@ -104,6 +183,7 @@ const Auth = () => {
                     <Label htmlFor="signup-name">Nome Completo</Label>
                     <Input
                       id="signup-name"
+                      name="fullName"
                       type="text"
                       placeholder="Seu nome"
                       required
@@ -114,6 +194,7 @@ const Auth = () => {
                     <Label htmlFor="signup-email">E-mail</Label>
                     <Input
                       id="signup-email"
+                      name="email"
                       type="email"
                       placeholder="seu@email.com"
                       required
@@ -124,15 +205,17 @@ const Auth = () => {
                     <Label htmlFor="signup-password">Senha</Label>
                     <Input
                       id="signup-password"
+                      name="password"
                       type="password"
                       placeholder="••••••••"
+                      minLength={6}
                       required
                     />
                   </div>
 
                   <div className="space-y-3">
                     <Label>Sexo</Label>
-                    <RadioGroup defaultValue="female" className="flex gap-4">
+                    <RadioGroup name="sex" defaultValue="female" className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="female" id="female" />
                         <Label htmlFor="female" className="font-normal cursor-pointer">
@@ -153,8 +236,11 @@ const Auth = () => {
                       <Label htmlFor="age">Idade</Label>
                       <Input
                         id="age"
+                        name="age"
                         type="number"
                         placeholder="25"
+                        min="18"
+                        max="120"
                         required
                       />
                     </div>
@@ -163,8 +249,12 @@ const Auth = () => {
                       <Label htmlFor="height">Altura (cm)</Label>
                       <Input
                         id="height"
+                        name="height"
                         type="number"
                         placeholder="170"
+                        min="100"
+                        max="250"
+                        step="0.01"
                         required
                       />
                     </div>
@@ -174,9 +264,12 @@ const Auth = () => {
                     <Label htmlFor="initial-weight">Peso Inicial (kg)</Label>
                     <Input
                       id="initial-weight"
+                      name="initialWeight"
                       type="number"
                       step="0.1"
                       placeholder="70.0"
+                      min="30"
+                      max="300"
                       required
                     />
                   </div>
