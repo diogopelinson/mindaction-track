@@ -1,19 +1,22 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { LogOut, TrendingUp, Camera, Calendar } from "lucide-react";
+import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [currentWeek] = useState(10);
   const [profile, setProfile] = useState<any>(null);
+  const [latestUpdate, setLatestUpdate] = useState<any>(null);
+  const [allUpdates, setAllUpdates] = useState<any[]>([]);
+  const [checkInCount, setCheckInCount] = useState(0);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -25,22 +28,45 @@ const Dashboard = () => {
       }
 
       // Fetch user profile
-      const { data: profileData, error } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Erro ao carregar perfil",
-          description: "Não foi possível carregar seus dados.",
-          variant: "destructive",
-        });
-      } else {
+      if (profileData) {
         setProfile(profileData);
       }
+
+      // Fetch latest update
+      const { data: latestData } = await supabase
+        .from('weekly_updates')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setLatestUpdate(latestData);
+
+      // Fetch all updates
+      const { data: allData } = await supabase
+        .from('weekly_updates')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('week_number', { ascending: true });
+
+      if (allData) {
+        setAllUpdates(allData);
+      }
+
+      // Count check-ins
+      const { count } = await supabase
+        .from('weekly_updates')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+
+      setCheckInCount(count || 0);
 
       setIsLoading(false);
     };
@@ -48,7 +74,7 @@ const Dashboard = () => {
     checkAuth();
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         navigate('/auth');
       }
@@ -57,198 +83,213 @@ const Dashboard = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
-  
-  // Mock data - will be replaced with real data from database
-  const userData = {
-    name: profile?.full_name || "Usuário",
-    initialWeight: profile?.initial_weight || 64.5,
-    currentWeight: 66.0,
-    targetWeight: 65.7,
-    minWeight: 65.5,
-    maxWeight: 67.3,
-    bodyFat: 28.5,
-    weeklyProgress: [
-      { week: 1, weight: 64.5, min: 64.3, target: 64.3, max: 64.4 },
-      { week: 2, weight: 64.7, min: 64.4, target: 64.5, max: 64.7 },
-      { week: 3, weight: 64.9, min: 64.6, target: 64.8, max: 65.1 },
-      { week: 4, weight: 65.1, min: 64.7, target: 65.0, max: 65.4 },
-      { week: 5, weight: 65.3, min: 64.9, target: 65.2, max: 65.7 },
-      { week: 6, weight: 65.5, min: 65.1, target: 65.4, max: 66.0 },
-      { week: 7, weight: 65.7, min: 65.2, target: 65.7, max: 66.3 },
-      { week: 8, weight: 65.9, min: 65.4, target: 65.9, max: 66.7 },
-      { week: 9, weight: 66.0, min: 65.5, target: 66.1, max: 67.0 },
-      { week: 10, weight: 66.0, min: 65.7, target: 66.3, max: 67.3 },
-    ]
-  };
+  }, [navigate]);
 
-  const getProgressZone = () => {
-    const { currentWeight, targetWeight, minWeight, maxWeight } = userData;
+  const calculateProgress = () => {
+    if (!profile) return 0;
     
-    if (currentWeight >= minWeight && currentWeight <= targetWeight) {
-      return { color: "bg-success", label: "Zona Verde", description: "Progresso ideal!" };
-    } else if (currentWeight > targetWeight && currentWeight <= maxWeight) {
-      return { color: "bg-warning", label: "Zona Amarela", description: "Atenção ao protocolo" };
+    const initial = profile.initial_weight;
+    const target = profile.target_weight;
+    const current = latestUpdate?.weight || initial;
+
+    if (profile.goal_type === 'perda_peso') {
+      return ((initial - current) / (initial - target)) * 100;
     } else {
-      return { color: "bg-danger", label: "Zona Vermelha", description: "Revisar estratégia" };
+      return ((current - initial) / (target - initial)) * 100;
     }
   };
 
-  const progressZone = getProgressZone();
-  const progressPercentage = ((currentWeek / 24) * 100);
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Até logo!",
-        description: "Você foi desconectado com sucesso.",
-      });
-      navigate('/');
-    }
+  const calculateWeightChange = () => {
+    if (!profile) return 0;
+    const initial = profile.initial_weight;
+    const current = latestUpdate?.weight || initial;
+    return current - initial;
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse">
-            <img src={logo} alt="MindAction Club" className="w-24 h-24 mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <img src={logo} alt="Loading" className="h-16 animate-pulse" />
       </div>
     );
   }
 
+  const progress = calculateProgress();
+  const weightChange = calculateWeightChange();
+  const currentWeight = latestUpdate?.weight || profile?.initial_weight || 0;
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card shadow-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="MindAction Club" className="w-12 h-12" />
-              <div>
-                <h1 className="text-2xl font-bebas tracking-wide">MindAction Club</h1>
-                <p className="text-sm text-muted-foreground">Olá, {userData.name}</p>
-              </div>
+    <div className="min-h-screen pb-20 bg-background">
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="Logo" className="h-16" />
+            <div>
+              <h1 className="text-2xl font-bebas">Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
+              <p className="text-sm text-muted-foreground">Bem-vindo ao Mapa MindFitness</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="h-5 w-5" />
-            </Button>
           </div>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-6">
-        {/* Progress Overview */}
-        <Card className="shadow-card animate-fade-in">
+        {/* Quick Actions */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl font-bebas tracking-wide">
-              <TrendingUp className="h-6 w-6 text-primary" />
-              Seu Progresso - Semana {currentWeek}
-            </CardTitle>
+            <CardTitle className="font-bebas text-xl">Ações Rápidas</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col gap-2"
+              onClick={() => navigate('/checkin')}
+            >
+              <PlusCircle className="h-6 w-6 text-primary" />
+              <span className="text-sm font-semibold">Check-in</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col gap-2"
+              onClick={() => navigate('/history')}
+            >
+              <History className="h-6 w-6 text-primary" />
+              <span className="text-sm font-semibold">Histórico</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col gap-2"
+              onClick={() => navigate('/profile')}
+            >
+              <Settings className="h-6 w-6 text-primary" />
+              <span className="text-sm font-semibold">Editar Perfil</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col gap-2"
+              onClick={() => navigate('/help')}
+            >
+              <HelpCircle className="h-6 w-6 text-primary" />
+              <span className="text-sm font-semibold">Ajuda</span>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Progress Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-bebas text-xl">Progresso</CardTitle>
+            <CardDescription>Seu acompanhamento semanal</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground mb-1">Peso Inicial</p>
-                <p className="text-2xl font-bebas">{userData.initialWeight} kg</p>
+              <div>
+                <p className="text-sm text-muted-foreground">Peso Atual</p>
+                <p className="text-2xl font-bold text-primary">{currentWeight.toFixed(1)} kg</p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground mb-1">Peso Atual</p>
-                <p className="text-2xl font-bebas">{userData.currentWeight} kg</p>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.goal_type === 'perda_peso' ? 'Perda' : 'Ganho'}
+                </p>
+                <p className="text-2xl font-bold text-primary">
+                  {Math.abs(weightChange).toFixed(1)} kg
+                </p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground mb-1">Meta Projetada</p>
-                <p className="text-2xl font-bebas">{userData.targetWeight} kg</p>
+              <div>
+                <p className="text-sm text-muted-foreground">Meta</p>
+                <p className="text-2xl font-bold text-primary">{profile?.target_weight?.toFixed(1) || 0} kg</p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground mb-1">% Gordura</p>
-                <p className="text-2xl font-bebas">{userData.bodyFat}%</p>
+              <div>
+                <p className="text-sm text-muted-foreground">Check-ins</p>
+                <p className="text-2xl font-bold text-primary">{checkInCount}</p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-raleway">Progresso da Trilha</span>
-                <span className="text-sm text-muted-foreground">
-                  Semana {currentWeek} de 24
-                </span>
+            {latestUpdate?.body_fat_percentage && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Gordura Corporal</p>
+                <p className="text-xl font-semibold">{latestUpdate.body_fat_percentage}%</p>
               </div>
-              <Progress value={progressPercentage} className="h-3" />
-            </div>
+            )}
 
-            {/* Zone Indicator */}
-            <div className={`p-4 rounded-lg ${progressZone.color}/10 border-2 border-current`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bebas text-xl tracking-wide">{progressZone.label}</p>
-                  <p className="text-sm text-muted-foreground">{progressZone.description}</p>
-                </div>
-                <div className={`w-4 h-4 rounded-full ${progressZone.color}`} />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Progresso Geral</span>
+                <span className="text-sm font-bold text-primary">{Math.min(progress, 100).toFixed(0)}%</span>
               </div>
+              <Progress value={Math.min(progress, 100)} className="h-3" />
             </div>
           </CardContent>
         </Card>
 
-        {/* Weekly Chart Preview */}
-        <Card className="shadow-card animate-slide-up">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bebas tracking-wide">
-              Evolução Semanal
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-end justify-between gap-2">
-              {userData.weeklyProgress.slice(-8).map((week) => (
-                <div key={week.week} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full bg-muted/30 rounded-t relative" 
-                       style={{ height: `${(week.weight / 70) * 100}%` }}>
-                    <div className="absolute inset-0 gradient-bronze opacity-70 rounded-t" />
+        {/* Recent Check-ins */}
+        {allUpdates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-bebas text-xl">Check-ins Recentes</CardTitle>
+              <CardDescription>Seus últimos registros</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {allUpdates.slice(-3).reverse().map((update) => (
+                  <div
+                    key={update.id}
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <Weight className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Semana {update.week_number}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(update.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-primary">{update.weight} kg</p>
+                      {update.body_fat_percentage && (
+                        <p className="text-sm text-muted-foreground">{update.body_fat_percentage}% gordura</p>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">S{week.week}</span>
+                ))}
+              </div>
+              {allUpdates.length > 3 && (
+                <Button
+                  variant="ghost"
+                  className="w-full mt-4"
+                  onClick={() => navigate('/history')}
+                >
+                  Ver todos os check-ins
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {allUpdates.length === 0 && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-primary/10 p-6 rounded-full">
+                  <TrendingUp className="h-12 w-12 text-primary" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div>
+                  <h3 className="font-bebas text-xl mb-2">Comece sua jornada!</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Faça seu primeiro check-in na próxima segunda-feira
+                  </p>
+                  <Button onClick={() => navigate('/help')}>
+                    Saiba como fazer o check-in
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-        {/* Action Buttons */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <Button 
-            size="lg" 
-            className="gradient-bronze shadow-bronze h-auto py-6"
-            onClick={() => navigate('/weekly-update')}
-          >
-            <Camera className="mr-2 h-5 w-5" />
-            <div className="text-left">
-              <p className="font-bebas text-lg">Atualização Semanal</p>
-              <p className="text-xs opacity-90">Registre seu progresso</p>
-            </div>
-          </Button>
-
-          <Button 
-            size="lg" 
-            variant="outline"
-            className="h-auto py-6 border-2"
-            onClick={() => navigate('/history')}
-          >
-            <Calendar className="mr-2 h-5 w-5" />
-            <div className="text-left">
-              <p className="font-bebas text-lg">Histórico Completo</p>
-              <p className="text-xs opacity-80">Ver todas as semanas</p>
-            </div>
-          </Button>
-        </div>
-      </main>
+      <BottomNav />
     </div>
   );
 };

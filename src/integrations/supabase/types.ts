@@ -17,38 +17,47 @@ export type Database = {
       profiles: {
         Row: {
           age: number
+          cpf: string | null
           created_at: string
           email: string
           full_name: string
+          goal_type: string | null
           height: number
           id: string
           initial_weight: number
-          role: Database["public"]["Enums"]["user_role"]
+          phone: string | null
           sex: Database["public"]["Enums"]["user_sex"]
+          target_weight: number | null
           updated_at: string
         }
         Insert: {
           age: number
+          cpf?: string | null
           created_at?: string
           email: string
           full_name: string
+          goal_type?: string | null
           height: number
           id: string
           initial_weight: number
-          role?: Database["public"]["Enums"]["user_role"]
+          phone?: string | null
           sex: Database["public"]["Enums"]["user_sex"]
+          target_weight?: number | null
           updated_at?: string
         }
         Update: {
           age?: number
+          cpf?: string | null
           created_at?: string
           email?: string
           full_name?: string
+          goal_type?: string | null
           height?: number
           id?: string
           initial_weight?: number
-          role?: Database["public"]["Enums"]["user_role"]
+          phone?: string | null
           sex?: Database["public"]["Enums"]["user_sex"]
+          target_weight?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -96,6 +105,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       weekly_updates: {
         Row: {
@@ -165,8 +195,16 @@ export type Database = {
         }
         Returns: number
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "mentee" | "admin"
       goal_type: "weight_loss" | "muscle_gain"
       user_role: "mentee" | "mentor"
       user_sex: "male" | "female"
@@ -297,6 +335,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["mentee", "admin"],
       goal_type: ["weight_loss", "muscle_gain"],
       user_role: ["mentee", "mentor"],
       user_sex: ["male", "female"],
