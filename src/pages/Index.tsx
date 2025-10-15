@@ -1,11 +1,22 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, TrendingUp, Target, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const Index = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to dashboard if already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard');
+      }
+    });
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,7 +29,7 @@ const Index = () => {
             <img src={logo} alt="MindAction Club" className="w-48 h-48 mb-8" />
             
             <h1 className="text-6xl md:text-7xl font-bebas tracking-wider text-foreground mb-4">
-              MindAction Club
+              Mapa MindFitness
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mb-8 font-raleway">
@@ -92,7 +103,7 @@ const Index = () => {
             Pronto para Transformar Seu Corpo?
           </h2>
           <p className="text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-            Junte-se ao MindAction Club e comece sua jornada de transformação hoje mesmo
+            Junte-se ao Mapa MindFitness e comece sua jornada de transformação hoje mesmo
           </p>
           <Button 
             size="lg" 
