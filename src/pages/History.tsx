@@ -1,64 +1,39 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { ArrowLeft, Calendar, Weight, Percent } from "lucide-react";
 import logo from "@/assets/logo.png";
-import BottomNav from "@/components/BottomNav";
-import { calculateWeeklyZone, getZoneColor, getZoneLabel } from "@/lib/progressUtils";
 
 const History = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
   const [updates, setUpdates] = useState<any[]>([]);
-  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
+    fetchHistory();
+  }, []);
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+  const fetchHistory = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
 
-      if (profileData) {
-        setProfile(profileData);
-      }
+    const { data, error } = await supabase
+      .from("weekly_updates")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("week_number", { ascending: false });
 
-      const { data, error } = await supabase
-        .from('weekly_updates')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('week_number', { ascending: true });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar seu histórico.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      setUpdates(data || []);
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, [navigate, toast]);
+    if (!error && data) {
+      setUpdates(data);
+    }
+    setIsLoading(false);
+  };
 
   if (isLoading) {
     return (
@@ -68,109 +43,91 @@ const History = () => {
     );
   }
 
-  const getChartData = () => {
-    return updates.map((update) => ({
-      week: `S${update.week_number}`,
-      peso: update.weight,
-      gordura: update.body_fat_percentage,
-    }));
-  };
-
   return (
-    <div className="min-h-screen pb-20 bg-background">
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bebas">Histórico</h1>
-              <p className="text-sm text-muted-foreground">Todos os seus check-ins</p>
-            </div>
+    <div className="min-h-screen p-4 pb-20">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bebas">Histórico Completo</h1>
+            <p className="text-sm text-muted-foreground">Seus últimos registros</p>
           </div>
-          <img src={logo} alt="Logo" className="h-12" />
         </div>
 
-        {updates.length > 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-bebas">Evolução Completa</CardTitle>
-              <CardDescription>Seu progresso ao longo das semanas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={getChartData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <ReferenceLine y={profile?.target_weight} yAxisId="left" stroke="hsl(var(--primary))" strokeDasharray="5 5" label="Meta" />
-                  <Line yAxisId="left" type="monotone" dataKey="peso" stroke="hsl(var(--primary))" strokeWidth={2} name="Peso (kg)" />
-                  <Line yAxisId="right" type="monotone" dataKey="gordura" stroke="hsl(var(--accent))" strokeWidth={2} name="Gordura (%)" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
-
         {updates.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Você ainda não tem check-ins registrados.</p>
-              <Button className="mt-4" onClick={() => navigate('/checkin')}>
-                Fazer primeiro check-in
-              </Button>
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-muted-foreground">
+                Você ainda não tem nenhum check-in. Faça seu primeiro check-in na segunda-feira!
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {updates.map((update, index) => {
-              const zone = index > 0 ? calculateWeeklyZone(update.weight, updates[index - 1].weight, profile?.goal_type) : null;
-              return (
-                <Card key={update.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="font-bebas">Semana {update.week_number}</CardTitle>
-                          {zone && <Badge className={`${getZoneColor(zone.zone)} text-white`}>{getZoneLabel(zone.zone)}</Badge>}
-                        </div>
-                        <CardDescription>{new Date(update.created_at).toLocaleDateString('pt-BR')}</CardDescription>
-                      </div>
+            {updates.map((update) => (
+              <Card key={update.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="font-bebas">Semana {update.week_number}</CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(update.created_at).toLocaleDateString("pt-BR")}
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Weight className="h-5 w-5 text-primary" />
                       <div>
                         <p className="text-sm text-muted-foreground">Peso</p>
-                        <p className="text-xl font-bold text-primary">{update.weight} kg</p>
+                        <p className="font-semibold">{update.weight} kg</p>
                       </div>
-                      {update.body_fat_percentage && (
+                    </div>
+                    {update.body_fat_percentage && (
+                      <div className="flex items-center gap-2">
+                        <Percent className="h-5 w-5 text-primary" />
                         <div>
                           <p className="text-sm text-muted-foreground">Gordura</p>
-                          <p className="text-xl font-bold text-primary">{update.body_fat_percentage}%</p>
+                          <p className="font-semibold">{update.body_fat_percentage}%</p>
                         </div>
-                      )}
-                    </div>
-                    {update.notes && (
-                      <div className="p-4 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">{update.notes}</p>
                       </div>
                     )}
-                    {update.photo_url && (
-                      <img src={update.photo_url} alt={`Semana ${update.week_number}`} className="w-full max-w-md rounded-lg mx-auto" />
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Medidas (cm)</p>
+                      <p className="text-sm">
+                        P: {update.neck_circumference} / C: {update.waist_circumference}
+                        {update.hip_circumference && ` / Q: ${update.hip_circumference}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {update.photo_url && (
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      {update.photo_url.split(",").map((url: string, idx: number) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt={`Foto ${idx + 1}`}
+                          className="w-full h-32 object-cover rounded-md"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {update.notes && (
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <p className="text-sm">{update.notes}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>
-      <BottomNav />
     </div>
   );
 };
