@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp } from "lucide-react";
+import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { Badge } from "@/components/ui/badge";
+import { calculateWeeklyZone, getZoneColor, getZoneLabel } from "@/lib/progressUtils";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +20,7 @@ const Dashboard = () => {
   const [latestUpdate, setLatestUpdate] = useState<any>(null);
   const [allUpdates, setAllUpdates] = useState<any[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -68,6 +72,16 @@ const Dashboard = () => {
 
       setCheckInCount(count || 0);
 
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      setIsAdmin(!!roleData);
+
       setIsLoading(false);
     };
 
@@ -118,6 +132,12 @@ const Dashboard = () => {
   const weightChange = calculateWeightChange();
   const currentWeight = latestUpdate?.weight || profile?.initial_weight || 0;
 
+  const chartData = allUpdates.map((update) => ({
+    week: update.week_number,
+    weight: update.weight,
+    bodyFat: update.body_fat_percentage,
+  }));
+
   return (
     <div className="min-h-screen pb-20 bg-background">
       <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -130,6 +150,16 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Bem-vindo ao Mapa MindFitness</p>
             </div>
           </div>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate('/admin')}
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </Button>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -220,6 +250,49 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Evolution Charts */}
+        {allUpdates.length > 1 && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-bebas text-xl">Evolução do Peso</CardTitle>
+                <CardDescription>Seu progresso ao longo das semanas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" label={{ value: 'Semana', position: 'insideBottom', offset: -5 }} />
+                    <YAxis label={{ value: 'Peso (kg)', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="weight" stroke="hsl(var(--primary))" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {allUpdates.some(u => u.body_fat_percentage) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-bebas text-xl">Evolução da Gordura Corporal</CardTitle>
+                  <CardDescription>Percentual de gordura ao longo das semanas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" label={{ value: 'Semana', position: 'insideBottom', offset: -5 }} />
+                      <YAxis label={{ value: 'Gordura (%)', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="bodyFat" stroke="hsl(var(--accent))" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
         {/* Recent Check-ins */}
         {allUpdates.length > 0 && (
           <Card>
@@ -229,30 +302,51 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {allUpdates.slice(-3).reverse().map((update) => (
-                  <div
-                    key={update.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <Weight className="h-5 w-5 text-primary" />
+                {allUpdates.slice(-3).reverse().map((update, idx, arr) => {
+                  const previousUpdate = arr[idx + 1];
+                  let zone = null;
+                  
+                  if (previousUpdate && profile) {
+                    zone = calculateWeeklyZone(
+                      update.weight,
+                      previousUpdate.weight,
+                      profile.goal_type,
+                      1 // Default 1% weekly variation
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={update.id}
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <Weight className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">Semana {update.week_number}</p>
+                            {zone && (
+                              <Badge variant="outline" className={`text-xs ${getZoneColor(zone)}`}>
+                                {getZoneLabel(zone)}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(update.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold">Semana {update.week_number}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(update.created_at).toLocaleDateString('pt-BR')}
-                        </p>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">{update.weight} kg</p>
+                        {update.body_fat_percentage && (
+                          <p className="text-sm text-muted-foreground">{update.body_fat_percentage}% gordura</p>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary">{update.weight} kg</p>
-                      {update.body_fat_percentage && (
-                        <p className="text-sm text-muted-foreground">{update.body_fat_percentage}% gordura</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {allUpdates.length > 3 && (
                 <Button

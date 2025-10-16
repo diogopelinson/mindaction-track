@@ -11,12 +11,14 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validateCPF, formatCPF } from "@/lib/cpfValidator";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [requestAdminAccess, setRequestAdminAccess] = useState(false);
+  const [cpfValue, setCpfValue] = useState("");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -80,6 +82,17 @@ const Auth = () => {
     const targetWeight = parseFloat(formData.get('targetWeight') as string);
     const goalType = formData.get('goalType') as string;
 
+    // Validate CPF
+    if (!validateCPF(cpf)) {
+      toast({
+        variant: "destructive",
+        title: "CPF Inválido",
+        description: "Por favor, insira um CPF válido.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -104,11 +117,19 @@ const Auth = () => {
 
       if (data.session) {
         if (requestAdminAccess) {
-          toast({
-            title: "Solicitação de acesso admin recebida",
-            description: "Envie um e-mail para diogopelinsonduartemoraes@gmail.com com seus dados para verificação.",
-            duration: 8000,
-          });
+          // Send admin request email
+          try {
+            await supabase.functions.invoke('send-admin-request', {
+              body: { email, fullName, cpf, phone }
+            });
+            toast({
+              title: "Solicitação enviada!",
+              description: "Sua solicitação de acesso admin foi enviada. Você receberá uma resposta em breve.",
+              duration: 8000,
+            });
+          } catch (emailError) {
+            console.error('Error sending admin request:', emailError);
+          }
         } else {
           toast({
             title: "Conta criada!",
@@ -216,6 +237,9 @@ const Auth = () => {
                         name="cpf"
                         type="text"
                         placeholder="000.000.000-00"
+                        value={cpfValue}
+                        onChange={(e) => setCpfValue(formatCPF(e.target.value))}
+                        maxLength={14}
                         required
                       />
                     </div>
