@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp, Shield } from "lucide-react";
+import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp, Shield, Calendar, Flame, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,8 @@ import BottomNav from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { calculateWeeklyZone, getZoneColor, getZoneLabel } from "@/lib/progressUtils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import StatsCard from "@/components/StatsCard";
+import ProgressRing from "@/components/ProgressRing";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -203,49 +205,70 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatsCard
+            title="Peso Atual"
+            value={`${currentWeight.toFixed(1)} kg`}
+            icon={Weight}
+            description={profile?.goal_type === 'perda_peso' ? 'Em redução' : 'Em crescimento'}
+          />
+          <StatsCard
+            title={profile?.goal_type === 'perda_peso' ? 'Peso Perdido' : 'Peso Ganho'}
+            value={`${Math.abs(weightChange).toFixed(1)} kg`}
+            icon={TrendingUp}
+            description={`Faltam ${Math.abs((profile?.target_weight || 0) - currentWeight).toFixed(1)} kg`}
+          />
+          <StatsCard
+            title="Check-ins"
+            value={checkInCount}
+            icon={Calendar}
+            description={`${checkInCount > 0 ? 'Última semana ' + (latestUpdate?.week_number || 0) : 'Nenhum ainda'}`}
+          />
+          <StatsCard
+            title="Gordura Corporal"
+            value={latestUpdate?.body_fat_percentage ? `${latestUpdate.body_fat_percentage}%` : '-'}
+            icon={Activity}
+            description={latestUpdate?.body_fat_percentage ? 'Método Navy' : 'Aguardando medidas'}
+          />
+        </div>
+
         {/* Progress Overview */}
         <Card>
           <CardHeader>
-            <CardTitle className="font-bebas text-xl">Progresso</CardTitle>
-            <CardDescription>Seu acompanhamento semanal</CardDescription>
+            <CardTitle className="font-bebas text-xl">Visão Geral do Progresso</CardTitle>
+            <CardDescription>Seu acompanhamento detalhado</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Peso Atual</p>
-                <p className="text-2xl font-bold text-primary">{currentWeight.toFixed(1)} kg</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {profile?.goal_type === 'perda_peso' ? 'Perda' : 'Ganho'}
-                </p>
-                <p className="text-2xl font-bold text-primary">
-                  {Math.abs(weightChange).toFixed(1)} kg
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Meta</p>
-                <p className="text-2xl font-bold text-primary">{profile?.target_weight?.toFixed(1) || 0} kg</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Check-ins</p>
-                <p className="text-2xl font-bold text-primary">{checkInCount}</p>
-              </div>
-            </div>
+          <CardContent>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="flex-1 w-full space-y-6">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Meta de {profile?.goal_type === 'perda_peso' ? 'Perda' : 'Ganho'} de Peso</span>
+                    <span className="text-sm font-bold text-primary">{Math.min(progress, 100).toFixed(0)}%</span>
+                  </div>
+                  <Progress value={Math.min(progress, 100)} className="h-3" />
+                </div>
 
-            {latestUpdate?.body_fat_percentage && (
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-1">Gordura Corporal</p>
-                <p className="text-xl font-semibold">{latestUpdate.body_fat_percentage}%</p>
+                <div className="grid grid-cols-3 gap-4 pt-4">
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Inicial</p>
+                    <p className="text-lg font-bold">{profile?.initial_weight?.toFixed(1) || 0} kg</p>
+                  </div>
+                  <div className="text-center p-4 bg-primary/10 rounded-lg border-2 border-primary">
+                    <p className="text-xs text-muted-foreground mb-1">Atual</p>
+                    <p className="text-lg font-bold text-primary">{currentWeight.toFixed(1)} kg</p>
+                  </div>
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Meta</p>
+                    <p className="text-lg font-bold">{profile?.target_weight?.toFixed(1) || 0} kg</p>
+                  </div>
+                </div>
               </div>
-            )}
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Progresso Geral</span>
-                <span className="text-sm font-bold text-primary">{Math.min(progress, 100).toFixed(0)}%</span>
+              <div className="flex items-center justify-center">
+                <ProgressRing progress={progress} size={160} strokeWidth={12} />
               </div>
-              <Progress value={Math.min(progress, 100)} className="h-3" />
             </div>
           </CardContent>
         </Card>
@@ -362,20 +385,31 @@ const Dashboard = () => {
         )}
 
         {allUpdates.length === 0 && (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
             <CardContent>
-              <div className="flex flex-col items-center gap-4">
-                <div className="bg-primary/10 p-6 rounded-full">
-                  <TrendingUp className="h-12 w-12 text-primary" />
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                  <div className="relative bg-primary/10 p-8 rounded-full">
+                    <Flame className="h-16 w-16 text-primary" />
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bebas text-xl mb-2">Comece sua jornada!</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Faça seu primeiro check-in na próxima segunda-feira
+                <div className="max-w-md">
+                  <h3 className="font-bebas text-3xl mb-3 tracking-wide">Comece sua Transformação!</h3>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    Você está a um passo de iniciar sua jornada. Faça seu primeiro check-in na próxima segunda-feira 
+                    e comece a acompanhar sua evolução semana a semana.
                   </p>
-                  <Button onClick={() => navigate('/help')}>
-                    Saiba como fazer o check-in
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button onClick={() => navigate('/help')} size="lg" className="gap-2">
+                      <HelpCircle className="h-5 w-5" />
+                      Como Fazer Check-in
+                    </Button>
+                    <Button onClick={() => navigate('/profile')} variant="outline" size="lg" className="gap-2">
+                      <Settings className="h-5 w-5" />
+                      Editar Perfil
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
