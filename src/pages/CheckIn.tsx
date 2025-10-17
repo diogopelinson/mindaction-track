@@ -15,7 +15,6 @@ const CheckIn = () => {
   const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [canCheckIn, setCanCheckIn] = useState(false);
   const [weekNumber, setWeekNumber] = useState(1);
   const [frontPhoto, setFrontPhoto] = useState<File | null>(null);
   const [sidePhoto, setSidePhoto] = useState<File | null>(null);
@@ -41,16 +40,6 @@ const CheckIn = () => {
       .single();
 
     setProfile(profileData);
-
-    // Check if user already did check-in this week
-    const { data: existingCheckin } = await supabase
-      .from("weekly_updates")
-      .select("*")
-      .eq("user_id", user.id)
-      .gte("created_at", new Date(new Date().setDate(new Date().getDate() - 7)).toISOString())
-      .maybeSingle();
-
-    setCanCheckIn(!existingCheckin);
 
     // Calculate week number
     const { count } = await supabase
@@ -133,25 +122,6 @@ const CheckIn = () => {
     );
   }
 
-  if (!canCheckIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <CardTitle className="font-bebas text-2xl">Check-in Indisponível</CardTitle>
-            <CardDescription>
-              Você já realizou seu check-in desta semana. Aguarde 7 dias para fazer um novo check-in.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/dashboard")} className="w-full">
-              Voltar ao Início
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen p-4 pb-20">
