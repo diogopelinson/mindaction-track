@@ -42,10 +42,6 @@ const CheckIn = () => {
 
     setProfile(profileData);
 
-    // Check if today is Monday
-    const today = new Date().getDay();
-    const isMonday = today === 1;
-
     // Check if user already did check-in this week
     const { data: existingCheckin } = await supabase
       .from("weekly_updates")
@@ -54,7 +50,7 @@ const CheckIn = () => {
       .gte("created_at", new Date(new Date().setDate(new Date().getDate() - 7)).toISOString())
       .maybeSingle();
 
-    setCanCheckIn(isMonday && !existingCheckin);
+    setCanCheckIn(!existingCheckin);
 
     // Calculate week number
     const { count } = await supabase
@@ -144,9 +140,7 @@ const CheckIn = () => {
           <CardHeader>
             <CardTitle className="font-bebas text-2xl">Check-in Indisponível</CardTitle>
             <CardDescription>
-              {new Date().getDay() !== 1
-                ? "O check-in está disponível apenas às segundas-feiras."
-                : "Você já realizou seu check-in desta semana. Retorne na próxima segunda-feira."}
+              Você já realizou seu check-in desta semana. Aguarde 7 dias para fazer um novo check-in.
             </CardDescription>
           </CardHeader>
           <CardContent>

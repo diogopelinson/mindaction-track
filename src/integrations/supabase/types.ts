@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_requests: {
+        Row: {
+          cpf: string
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cpf: string
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cpf?: string
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number

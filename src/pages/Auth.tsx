@@ -115,20 +115,28 @@ const Auth = () => {
 
       if (error) throw error;
 
-      if (data.session) {
+      if (data.session && data.user) {
         if (requestAdminAccess) {
-          // Send admin request email
+          // Insert admin request in database
           try {
-            await supabase.functions.invoke('send-admin-request', {
-              body: { email, fullName, cpf, phone }
-            });
+            await supabase
+              .from('admin_requests')
+              .insert({
+                user_id: data.user.id,
+                full_name: fullName,
+                email,
+                cpf,
+                phone,
+                status: 'pending'
+              });
+            
             toast({
-              title: "Solicitação enviada!",
-              description: "Sua solicitação de acesso admin foi enviada. Você receberá uma resposta em breve.",
+              title: "Solicitação registrada!",
+              description: "Sua solicitação de acesso admin foi registrada e está aguardando aprovação do administrador.",
               duration: 8000,
             });
-          } catch (emailError) {
-            console.error('Error sending admin request:', emailError);
+          } catch (requestError) {
+            console.error('Error creating admin request:', requestError);
           }
         } else {
           toast({
@@ -386,8 +394,8 @@ const Auth = () => {
                   {requestAdminAccess && (
                     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
                       <p className="text-sm">
-                        Envie um e-mail para <strong>diogopelinsonduartemoraes@gmail.com</strong> com seus dados para verificação. 
-                        Após aprovação manual, sua conta será ativada como administrador.
+                        Sua solicitação será enviada ao administrador para aprovação. 
+                        Você receberá as permissões de admin assim que sua solicitação for aprovada.
                       </p>
                     </div>
                   )}

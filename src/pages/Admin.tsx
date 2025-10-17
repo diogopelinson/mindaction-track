@@ -18,6 +18,7 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [userData, setUserData] = useState<any>(null);
   const [updates, setUpdates] = useState<any[]>([]);
+  const [adminRequests, setAdminRequests] = useState<any[]>([]);
 
   useEffect(() => {
     checkAdminAccess();
@@ -57,6 +58,7 @@ const Admin = () => {
 
     setIsAdmin(true);
     await fetchUsers();
+    await fetchAdminRequests();
     setIsLoading(false);
   };
 
@@ -69,6 +71,82 @@ const Admin = () => {
     if (data) {
       setUsers(data);
     }
+  };
+
+  const fetchAdminRequests = async () => {
+    const { data } = await supabase
+      .from("admin_requests")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      setAdminRequests(data);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string, userId: string) => {
+    // Add admin role
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert({
+        user_id: userId,
+        role: "admin"
+      });
+
+    if (roleError) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível adicionar a role de admin.",
+      });
+      return;
+    }
+
+    // Update request status
+    const { error: updateError } = await supabase
+      .from("admin_requests")
+      .update({ status: "approved" })
+      .eq("id", requestId);
+
+    if (updateError) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status da solicitação.",
+      });
+      return;
+    }
+
+    toast({
+      title: "Solicitação aprovada!",
+      description: "O usuário agora tem acesso de administrador.",
+    });
+
+    await fetchAdminRequests();
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from("admin_requests")
+      .update({ status: "rejected" })
+      .eq("id", requestId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível rejeitar a solicitação.",
+      });
+      return;
+    }
+
+    toast({
+      title: "Solicitação rejeitada",
+      description: "A solicitação foi rejeitada com sucesso.",
+    });
+
+    await fetchAdminRequests();
   };
 
   const fetchUserData = async (userId: string) => {
@@ -120,6 +198,46 @@ const Admin = () => {
             </div>
           </div>
         </div>
+
+        {adminRequests.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Solicitações de Acesso Admin</CardTitle>
+              <CardDescription>{adminRequests.length} solicitação(ões) pendente(s)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {adminRequests.map((request) => (
+                  <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-semibold">{request.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{request.email}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        CPF: {request.cpf} | Tel: {request.phone}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleApproveRequest(request.id, request.user_id)}
+                      >
+                        Aprovar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleRejectRequest(request.id)}
+                      >
+                        Rejeitar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mb-6">
           <CardHeader>
