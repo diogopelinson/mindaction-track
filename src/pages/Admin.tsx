@@ -31,35 +31,64 @@ const Admin = () => {
   }, [selectedUser]);
 
   const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
 
-    // Check if user has admin role
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      // Verify profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    if (!roleData) {
+      if (!profileData || profileError) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Sessão inválida",
+          description: "Sua conta não foi encontrada. Por favor, cadastre-se novamente.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      // Check if user has admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (!roleData) {
+        toast({
+          variant: "destructive",
+          title: "Acesso Negado",
+          description: "Você não tem permissão para acessar esta página.",
+        });
+        navigate("/dashboard");
+        return;
+      }
+
+      setIsAdmin(true);
+      await fetchUsers();
+      await fetchAdminRequests();
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Auth error:', error);
+      await supabase.auth.signOut();
       toast({
+        title: "Erro de autenticação",
+        description: "Por favor, faça login novamente.",
         variant: "destructive",
-        title: "Acesso Negado",
-        description: "Você não tem permissão para acessar esta página.",
       });
-      navigate("/dashboard");
-      return;
+      navigate("/auth");
     }
-
-    setIsAdmin(true);
-    await fetchUsers();
-    await fetchAdminRequests();
-    setIsLoading(false);
   };
 
   const fetchUsers = async () => {

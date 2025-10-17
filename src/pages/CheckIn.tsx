@@ -25,30 +25,52 @@ const CheckIn = () => {
   }, []);
 
   const checkAuthAndPermissions = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      // Fetch profile and verify it exists
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!profileData || profileError) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Sessão inválida",
+          description: "Sua conta não foi encontrada. Por favor, cadastre-se novamente.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      setProfile(profileData);
+
+      // Calculate week number
+      const { count } = await supabase
+        .from("weekly_updates")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      setWeekNumber((count || 0) + 1);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Auth error:', error);
+      await supabase.auth.signOut();
+      toast({
+        title: "Erro de autenticação",
+        description: "Por favor, faça login novamente.",
+        variant: "destructive",
+      });
       navigate("/auth");
-      return;
     }
-
-    // Fetch profile
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    setProfile(profileData);
-
-    // Calculate week number
-    const { count } = await supabase
-      .from("weekly_updates")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id);
-
-    setWeekNumber((count || 0) + 1);
-    setIsLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

@@ -25,24 +25,44 @@ const Profile = () => {
   }, []);
 
   const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    if (data) {
+      if (!data || error) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Sessão inválida",
+          description: "Sua conta não foi encontrada. Por favor, cadastre-se novamente.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
       setProfile(data);
       setEditedProfile(data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Auth error:', error);
+      await supabase.auth.signOut();
+      toast({
+        title: "Erro de autenticação",
+        description: "Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      navigate("/auth");
     }
-    setIsLoading(false);
   };
 
   const handleSave = async () => {

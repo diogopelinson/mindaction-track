@@ -23,9 +23,27 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/dashboard');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Verify if profile exists before redirecting
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          if (profileData) {
+            navigate('/dashboard');
+          } else {
+            // Profile doesn't exist, logout silently
+            await supabase.auth.signOut();
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user:', error);
+        await supabase.auth.signOut();
       }
     };
     checkUser();

@@ -26,65 +26,86 @@ const Dashboard = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate('/auth');
+          return;
+        }
 
-      // Fetch user profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+        // Verify user profile exists
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
 
-      if (profileData) {
+        // If profile doesn't exist, logout and redirect
+        if (!profileData || profileError) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Sessão inválida",
+            description: "Sua conta não foi encontrada. Por favor, cadastre-se novamente.",
+            variant: "destructive",
+          });
+          navigate('/auth');
+          return;
+        }
+
         setProfile(profileData);
+
+        // Fetch latest update
+        const { data: latestData } = await supabase
+          .from('weekly_updates')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        setLatestUpdate(latestData);
+
+        // Fetch all updates
+        const { data: allData } = await supabase
+          .from('weekly_updates')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('week_number', { ascending: true });
+
+        if (allData) {
+          setAllUpdates(allData);
+        }
+
+        // Count check-ins
+        const { count } = await supabase
+          .from('weekly_updates')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id);
+
+        setCheckInCount(count || 0);
+
+        // Check if user is admin
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        setIsAdmin(!!roleData);
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Auth error:', error);
+        await supabase.auth.signOut();
+        toast({
+          title: "Erro de autenticação",
+          description: "Por favor, faça login novamente.",
+          variant: "destructive",
+        });
+        navigate('/auth');
       }
-
-      // Fetch latest update
-      const { data: latestData } = await supabase
-        .from('weekly_updates')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setLatestUpdate(latestData);
-
-      // Fetch all updates
-      const { data: allData } = await supabase
-        .from('weekly_updates')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('week_number', { ascending: true });
-
-      if (allData) {
-        setAllUpdates(allData);
-      }
-
-      // Count check-ins
-      const { count } = await supabase
-        .from('weekly_updates')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id);
-
-      setCheckInCount(count || 0);
-
-      // Check if user is admin
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      setIsAdmin(!!roleData);
-
-      setIsLoading(false);
     };
 
     checkAuth();
