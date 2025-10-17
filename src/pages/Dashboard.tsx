@@ -13,6 +13,9 @@ import { calculateWeeklyZone, getZoneColor, getZoneLabel } from "@/lib/progressU
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import StatsCard from "@/components/StatsCard";
 import ProgressRing from "@/components/ProgressRing";
+import AIProgressInsights from "@/components/AIProgressInsights";
+import GoalPrediction from "@/components/GoalPrediction";
+import PatternDetection from "@/components/PatternDetection";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -293,6 +296,11 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI Features */}
+        <AIProgressInsights profile={profile} updates={allUpdates} />
+        <GoalPrediction profile={profile} updates={allUpdates} />
+        <PatternDetection updates={allUpdates} profile={profile} />
 
         {/* Evolution Charts */}
         {allUpdates.length > 1 && (

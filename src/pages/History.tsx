@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { calculateWeeklyZone } from "@/lib/progressUtils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import logo from "@/assets/logo.png";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { X } from "lucide-react";
+import { X, ArrowLeft } from "lucide-react";
+import AIPhotoComparison from "@/components/AIPhotoComparison";
 
 const History = () => {
   const navigate = useNavigate();
@@ -71,17 +73,18 @@ const History = () => {
     return labels[index] || `Foto ${index + 1}`;
   };
 
-  const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage
-      .from('weekly-photos')
-      .getPublicUrl(path);
-    return data.publicUrl;
-  };
-
   return (
     <div className="min-h-screen p-4 pb-20">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8">
+          <Button
+            variant="ghost"
+            className="mb-4 hover:bg-primary/10"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Voltar
+          </Button>
           <h1 className="text-5xl font-bebas tracking-wider mb-2">Histórico de Progresso</h1>
           <p className="text-muted-foreground text-lg">Acompanhe sua evolução ao longo do tempo</p>
         </div>
@@ -183,7 +186,11 @@ const History = () => {
               }
 
               const photoUrls = update.photo_url 
-                ? (Array.isArray(update.photo_url) ? update.photo_url : [update.photo_url])
+                ? (typeof update.photo_url === 'string' 
+                    ? update.photo_url.split(',').filter(url => url.trim()) 
+                    : Array.isArray(update.photo_url) 
+                      ? update.photo_url 
+                      : [])
                 : [];
 
               return (
@@ -259,16 +266,19 @@ const History = () => {
                     {/* Photos */}
                     {photoUrls.length > 0 && (
                       <div>
-                        <h3 className="font-semibold text-lg mb-4">Fotos do Progresso</h3>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-semibold text-lg">Fotos do Progresso</h3>
+                          <AIPhotoComparison update={update} />
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {photoUrls.map((url, index) => (
                             <div 
                               key={index} 
                               className="relative group cursor-pointer overflow-hidden rounded-lg border-2 border-border hover:border-primary transition-all duration-300"
-                              onClick={() => setSelectedImage(getPublicUrl(url))}
+                              onClick={() => setSelectedImage(url)}
                             >
                               <img
-                                src={getPublicUrl(url)}
+                                src={url}
                                 alt={`Progresso semana ${update.week_number} - ${getPhotoLabel(url, index)}`}
                                 className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
                                 loading="lazy"
