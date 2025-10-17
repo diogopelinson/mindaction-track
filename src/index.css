@@ -118,7 +118,7 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-raleway;
+    @apply bg-background text-foreground font-inter;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -137,8 +137,19 @@ All colors MUST be HSL.
     font-weight: 600;
   }
 
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+
   .gradient-bronze {
     background: var(--gradient-bronze);
+  }
+
+  .gradient-text {
+    background: var(--gradient-bronze);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .shadow-bronze {
@@ -149,12 +160,42 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-card);
   }
 
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
   }
 
   .animate-slide-up {
     animation: slideUp 0.6s ease-out;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 0.1s;
+    animation-fill-mode: backwards;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 0.2s;
+    animation-fill-mode: backwards;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 0.3s;
+    animation-fill-mode: backwards;
+  }
+
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -10px hsl(30 50% 48% / 0.4);
   }
 
   @keyframes fadeIn {
