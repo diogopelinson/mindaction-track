@@ -37,23 +37,7 @@ const Admin = () => {
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!profileData || profileError) {
-        await supabase.auth.signOut();
-        toast({
-          title: "Sessão inválida",
-          description: "Sua conta não foi encontrada. Por favor, cadastre-se novamente.",
-          variant: "destructive",
-        });
-        navigate("/auth");
-        return;
-      }
-
+      // Admins don't need a profile - only check role
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")

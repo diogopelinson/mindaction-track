@@ -27,7 +27,21 @@ const Auth = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // Verify if profile exists before redirecting
+          // Check if user is admin
+          const { data: adminRole } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          
+          if (adminRole) {
+            // Admin user - redirect to admin panel
+            navigate('/admin');
+            return;
+          }
+          
+          // Not admin - verify profile exists
           const { data: profileData } = await supabase
             .from('profiles')
             .select('id')
@@ -66,11 +80,25 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.session) {
+        // Check if user is admin
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
         toast({
           title: "Bem-vindo de volta!",
           description: "Login realizado com sucesso.",
         });
-        navigate('/dashboard');
+
+        // Redirect based on role
+        if (adminRole) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
       toast({

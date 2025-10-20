@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AICoach from "./pages/AICoach";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -23,16 +24,50 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/checkin" element={<CheckIn />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/ai-coach" element={<AICoach />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          
+          {/* Mentee-only routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute requireRole="mentee">
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/checkin" element={
+            <ProtectedRoute requireRole="mentee">
+              <CheckIn />
+            </ProtectedRoute>
+          } />
+          <Route path="/history" element={
+            <ProtectedRoute requireRole="mentee">
+              <History />
+            </ProtectedRoute>
+          } />
+          <Route path="/help" element={
+            <ProtectedRoute requireRole="mentee">
+              <Help />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute requireRole="mentee">
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/ai-coach" element={
+            <ProtectedRoute requireRole="mentee">
+              <AICoach />
+            </ProtectedRoute>
+          } />
+          
+          {/* Admin-only route */}
+          <Route path="/admin" element={
+            <ProtectedRoute requireRole="admin">
+              <Admin />
+            </ProtectedRoute>
+          } />
+          
+          {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

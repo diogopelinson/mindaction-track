@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp, Shield, Calendar, Flame, Activity } from "lucide-react";
+import { PlusCircle, History, Settings, HelpCircle, Target, Weight, TrendingUp, Calendar, Flame, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,6 @@ const Dashboard = () => {
   const [latestUpdate, setLatestUpdate] = useState<any>(null);
   const [allUpdates, setAllUpdates] = useState<any[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -87,16 +86,6 @@ const Dashboard = () => {
           .eq('user_id', session.user.id);
 
         setCheckInCount(count || 0);
-
-        // Check if user is admin
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        setIsAdmin(!!roleData);
 
         setIsLoading(false);
       } catch (error) {
@@ -176,16 +165,6 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Bem-vindo ao Mapa MindFitness</p>
             </div>
           </div>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => navigate('/admin')}
-            >
-              <Shield className="h-4 w-4" />
-              Admin
-            </Button>
-          )}
         </div>
 
         {/* Quick Actions */}
