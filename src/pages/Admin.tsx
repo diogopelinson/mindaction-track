@@ -3,32 +3,30 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Users } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LogOut, LayoutDashboard, Users, UserCheck } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logo from "@/assets/logo.png";
+import AdminStats from "@/components/admin/AdminStats";
+import MenteeCard from "@/components/admin/MenteeCard";
+import MenteeTable from "@/components/admin/MenteeTable";
+import MenteeDetailView from "@/components/admin/MenteeDetailView";
+import { MenteeData, calculateMenteeStatus, calculateGlobalStats } from "@/lib/adminUtils";
+
+type View = 'dashboard' | 'mentees' | 'requests' | 'detail';
 
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const [userData, setUserData] = useState<any>(null);
-  const [updates, setUpdates] = useState<any[]>([]);
+  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [selectedMenteeId, setSelectedMenteeId] = useState<string>("");
+  const [mentees, setMentees] = useState<MenteeData[]>([]);
   const [adminRequests, setAdminRequests] = useState<any[]>([]);
 
   useEffect(() => {
     checkAdminAccess();
   }, []);
-
-  useEffect(() => {
-    if (selectedUser) {
-      fetchUserData(selectedUser);
-    }
-  }, [selectedUser]);
 
   const checkAdminAccess = async () => {
     try {
@@ -39,7 +37,6 @@ const Admin = () => {
         return;
       }
 
-      // Verify profile exists
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("id")
@@ -57,7 +54,6 @@ const Admin = () => {
         return;
       }
 
-      // Check if user has admin role
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
@@ -75,8 +71,7 @@ const Admin = () => {
         return;
       }
 
-      setIsAdmin(true);
-      await fetchUsers();
+      await fetchMentees();
       await fetchAdminRequests();
       setIsLoading(false);
     } catch (error) {
@@ -91,15 +86,30 @@ const Admin = () => {
     }
   };
 
-  const fetchUsers = async () => {
-    const { data } = await supabase
+  const fetchMentees = async () => {
+    const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, full_name, email")
+      .select("*")
       .order("full_name");
 
-    if (data) {
-      setUsers(data);
-    }
+    if (!profilesData) return;
+
+    const menteesWithUpdates: MenteeData[] = await Promise.all(
+      profilesData.map(async (profile) => {
+        const { data: updates } = await supabase
+          .from("weekly_updates")
+          .select("*")
+          .eq("user_id", profile.id)
+          .order("week_number");
+
+        return {
+          ...profile,
+          updates: updates || [],
+        } as MenteeData;
+      })
+    );
+
+    setMentees(menteesWithUpdates);
   };
 
   const fetchAdminRequests = async () => {
@@ -115,7 +125,6 @@ const Admin = () => {
   };
 
   const handleApproveRequest = async (requestId: string, userId: string) => {
-    // Add admin role
     const { error: roleError } = await supabase
       .from("user_roles")
       .insert({
@@ -132,7 +141,6 @@ const Admin = () => {
       return;
     }
 
-    // Update request status
     const { error: updateError } = await supabase
       .from("admin_requests")
       .update({ status: "approved" })
@@ -178,220 +186,182 @@ const Admin = () => {
     await fetchAdminRequests();
   };
 
-  const fetchUserData = async (userId: string) => {
-    // Fetch user profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
-    setUserData(profile);
-
-    // Fetch user updates
-    const { data: updatesData } = await supabase
-      .from("weekly_updates")
-      .select("*")
-      .eq("user_id", userId)
-      .order("week_number");
-
-    setUpdates(updatesData || []);
+  const handleViewMenteeDetails = (menteeId: string) => {
+    setSelectedMenteeId(menteeId);
+    setCurrentView('detail');
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <img src={logo} alt="Loading" className="h-16 animate-pulse" />
       </div>
     );
   }
 
-  const chartData = updates.map((update) => ({
-    week: update.week_number,
-    weight: update.weight,
-    bodyFat: update.body_fat_percentage,
+  const menteesWithStatus = mentees.map((mentee) => ({
+    mentee,
+    status: calculateMenteeStatus(mentee.updates || [], mentee),
   }));
 
+  const selectedMentee = mentees.find((m) => m.id === selectedMenteeId);
+  const selectedStatus = selectedMentee ? calculateMenteeStatus(selectedMentee.updates || [], selectedMentee) : null;
+
+  const globalStats = calculateGlobalStats(mentees);
+
+  // Detail View
+  if (currentView === 'detail' && selectedMentee && selectedStatus) {
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <MenteeDetailView
+            mentee={selectedMentee}
+            status={selectedStatus}
+            onBack={() => setCurrentView('dashboard')}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Main Admin Panel
   return (
-    <div className="min-h-screen p-4 pb-20">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <Users className="h-8 w-8 text-primary" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="MINDACTION" className="h-10" />
             <div>
-              <h1 className="text-2xl font-bebas">Painel Admin</h1>
-              <p className="text-sm text-muted-foreground">Gerenciar usuários e acompanhar evolução</p>
+              <h1 className="text-xl font-bebas">Painel Administrativo</h1>
+              <p className="text-xs text-muted-foreground">Gestão de Mentorados</p>
             </div>
           </div>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
         </div>
+      </header>
 
-        {adminRequests.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Solicitações de Acesso Admin</CardTitle>
-              <CardDescription>{adminRequests.length} solicitação(ões) pendente(s)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {adminRequests.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-semibold">{request.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{request.email}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        CPF: {request.cpf} | Tel: {request.phone}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleApproveRequest(request.id, request.user_id)}
-                      >
-                        Aprovar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleRejectRequest(request.id)}
-                      >
-                        Rejeitar
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as View)} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="dashboard">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="mentees">
+              <Users className="h-4 w-4 mr-2" />
+              Mentorados
+            </TabsTrigger>
+            <TabsTrigger value="requests">
+              <UserCheck className="h-4 w-4 mr-2" />
+              Solicitações
+              {adminRequests.length > 0 && (
+                <span className="ml-2 h-5 w-5 rounded-full bg-danger text-danger-foreground text-xs flex items-center justify-center">
+                  {adminRequests.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Selecionar Usuário</CardTitle>
-            <CardDescription>Escolha um usuário para visualizar seu progresso</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedUser} onValueChange={setSelectedUser}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um usuário" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.full_name} ({user.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+          {/* Dashboard View */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <AdminStats stats={globalStats} />
+            
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bebas">Mentorados Recentes</h2>
+              <Button variant="outline" onClick={() => setCurrentView('mentees')}>
+                Ver Todos
+              </Button>
+            </div>
 
-        {userData && (
-          <>
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Informações do Usuário</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nome</p>
-                    <p className="font-semibold">{userData.full_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-semibold">{userData.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Objetivo</p>
-                    <p className="font-semibold">
-                      {userData.goal_type === 'perda_peso' ? 'Perda de Peso' : 'Ganho de Massa'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Meta</p>
-                    <p className="font-semibold">{userData.target_weight} kg</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {menteesWithStatus.slice(0, 6).map(({ mentee, status }) => (
+                <MenteeCard
+                  key={mentee.id}
+                  mentee={mentee}
+                  status={status}
+                  onViewDetails={() => handleViewMenteeDetails(mentee.id)}
+                />
+              ))}
+            </div>
 
-            {updates.length > 0 && (
-              <>
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle>Evolução do Peso</CardTitle>
-                    <CardDescription>Gráfico de evolução semanal</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="week" 
-                          label={{ value: 'Semana', position: 'insideBottom', offset: -5 }}
-                        />
-                        <YAxis label={{ value: 'Peso (kg)', angle: -90, position: 'insideLeft' }} />
-                        <Tooltip />
-                        <Legend />
-                        <Line 
-                          type="monotone" 
-                          dataKey="weight" 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2}
-                          name="Peso"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {updates.some(u => u.body_fat_percentage) && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Evolução da Gordura Corporal</CardTitle>
-                      <CardDescription>Percentual de gordura ao longo das semanas</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="week" 
-                            label={{ value: 'Semana', position: 'insideBottom', offset: -5 }}
-                          />
-                          <YAxis label={{ value: 'Gordura (%)', angle: -90, position: 'insideLeft' }} />
-                          <Tooltip />
-                          <Legend />
-                          <Line 
-                            type="monotone" 
-                            dataKey="bodyFat" 
-                            stroke="hsl(var(--accent))" 
-                            strokeWidth={2}
-                            name="Gordura Corporal"
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
-            )}
-
-            {updates.length === 0 && (
+            {menteesWithStatus.length === 0 && (
               <Card>
                 <CardContent className="text-center py-12">
-                  <p className="text-muted-foreground">
-                    Este usuário ainda não possui check-ins registrados.
-                  </p>
+                  <p className="text-muted-foreground">Nenhum mentorado cadastrado ainda.</p>
                 </CardContent>
               </Card>
             )}
-          </>
-        )}
+          </TabsContent>
+
+          {/* Mentees View */}
+          <TabsContent value="mentees">
+            <MenteeTable
+              mentees={menteesWithStatus}
+              onSelectMentee={handleViewMenteeDetails}
+            />
+          </TabsContent>
+
+          {/* Admin Requests View */}
+          <TabsContent value="requests">
+            <Card>
+              <CardHeader>
+                <CardTitle>Solicitações de Acesso Admin</CardTitle>
+                <CardDescription>
+                  {adminRequests.length === 0
+                    ? "Nenhuma solicitação pendente"
+                    : `${adminRequests.length} solicitação(ões) pendente(s)`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {adminRequests.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Nenhuma solicitação de acesso admin pendente.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {adminRequests.map((request) => (
+                      <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-semibold">{request.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{request.email}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            CPF: {request.cpf} | Tel: {request.phone}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleApproveRequest(request.id, request.user_id)}
+                          >
+                            Aprovar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRejectRequest(request.id)}
+                          >
+                            Rejeitar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

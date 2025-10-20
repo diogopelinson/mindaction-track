@@ -1,7 +1,16 @@
 export interface WeeklyUpdate {
+  id?: string;
+  user_id?: string;
   week_number: number;
   weight: number;
   body_fat_percentage?: number;
+  neck_circumference?: number;
+  waist_circumference?: number;
+  hip_circumference?: number;
+  photo_url?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Goal {
