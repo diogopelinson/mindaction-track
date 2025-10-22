@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { validateCPF, formatCPF } from "@/lib/cpfValidator";
+import { loginSchema, signupSchema } from "@/lib/validationSchemas";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -71,6 +72,18 @@ const Auth = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    // Validate input
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      toast({
+        title: "Erro de validação",
+        description: validation.error.issues[0].message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -128,12 +141,37 @@ const Auth = () => {
     const targetWeight = parseFloat(formData.get('targetWeight') as string);
     const goalType = formData.get('goalType') as string;
 
-    // Validate CPF
+    // Validate CPF first
     if (!validateCPF(cpf)) {
       toast({
         variant: "destructive",
         title: "CPF Inválido",
         description: "Por favor, insira um CPF válido.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate all inputs with zod
+    const validation = signupSchema.safeParse({
+      email,
+      password,
+      fullName,
+      cpf,
+      phone,
+      sex,
+      age,
+      height,
+      initialWeight,
+      targetWeight,
+      goalType,
+    });
+
+    if (!validation.success) {
+      toast({
+        title: "Erro de validação",
+        description: validation.error.issues[0].message,
+        variant: "destructive",
       });
       setIsLoading(false);
       return;
