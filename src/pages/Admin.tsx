@@ -11,6 +11,7 @@ import AdminStats from "@/components/admin/AdminStats";
 import MenteeCard from "@/components/admin/MenteeCard";
 import MenteeTable from "@/components/admin/MenteeTable";
 import MenteeDetailView from "@/components/admin/MenteeDetailView";
+import AlertsPanel from "@/components/admin/AlertsPanel";
 import { MenteeData, calculateMenteeStatus, calculateGlobalStats } from "@/lib/adminUtils";
 
 type View = 'dashboard' | 'mentees' | 'requests' | 'detail';
@@ -258,6 +259,9 @@ const Admin = () => {
 
           {/* Dashboard View */}
           <TabsContent value="dashboard" className="space-y-6">
+            {/* Alertas no topo */}
+            <AlertsPanel mentees={menteesWithStatus} onSelectMentee={handleViewMenteeDetails} />
+            
             <AdminStats stats={globalStats} />
             
             <div className="flex items-center justify-between">

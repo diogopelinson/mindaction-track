@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Target, TrendingUp, Calendar, Activity } from "lucide-react";
+import { ArrowLeft, User, Target, TrendingUp, Calendar, Activity, Eye, Image as ImageIcon } from "lucide-react";
 import { MenteeData, MenteeStatus, calculateProgressPercentage, formatDate } from "@/lib/adminUtils";
 import { Badge } from "@/components/ui/badge";
 import { getZoneColor, getZoneLabel } from "@/lib/progressUtils";
@@ -11,7 +12,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PatternDetection from "@/components/PatternDetection";
 import GoalPrediction from "@/components/GoalPrediction";
-import AIProgressInsights from "@/components/AIProgressInsights";
+import AdminAIInsights from "./AdminAIInsights";
+import { PhotoComparisonModal } from "./PhotoComparisonModal";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface MenteeDetailViewProps {
   mentee: MenteeData;
@@ -20,6 +23,10 @@ interface MenteeDetailViewProps {
 }
 
 const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => {
+  const [showPhotoComparison, setShowPhotoComparison] = useState(false);
+  const [selectedUpdates, setSelectedUpdates] = useState<any[]>([]);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
+  
   const updates = mentee.updates || [];
   const sortedUpdates = [...updates].sort((a, b) => a.week_number - b.week_number);
   
@@ -57,6 +64,19 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
     target_weight: mentee.target_weight,
     goal_type: mentee.goal_type,
     created_at: mentee.created_at,
+  };
+
+  const openPhotoComparison = (update: any) => {
+    // Encontrar uma atualização anterior para comparar
+    const currentIndex = sortedUpdates.findIndex(u => u.week_number === update.week_number);
+    if (currentIndex > 0) {
+      setSelectedUpdates([sortedUpdates[currentIndex - 1], update]);
+      setShowPhotoComparison(true);
+    }
+  };
+
+  const openLightbox = (photoUrl: string) => {
+    setLightboxPhoto(photoUrl);
   };
 
   return (
@@ -194,9 +214,80 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
         </>
       )}
 
-      {/* AI Insights */}
+      {/* Galeria de Fotos */}
+      {updates.length > 0 && updates.some(u => u.photo_url) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Galeria de Fotos de Progresso
+            </CardTitle>
+            <CardDescription>Fotos de todos os check-ins</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {[...sortedUpdates].reverse().map((update) => {
+                const photoUrls = update.photo_url 
+                  ? update.photo_url.split(',').filter((url: string) => url.trim()) 
+                  : [];
+                
+                if (photoUrls.length === 0) return null;
+                
+                return (
+                  <div key={update.id} className="border-b pb-6 last:border-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="font-semibold">Semana {update.week_number}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(update.created_at)} • {update.weight.toFixed(1)} kg
+                          {update.body_fat_percentage && ` • ${update.body_fat_percentage.toFixed(1)}% BF`}
+                        </p>
+                      </div>
+                      {sortedUpdates.findIndex(u => u.week_number === update.week_number) > 0 && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => openPhotoComparison(update)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Comparar
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      {photoUrls.map((url: string, idx: number) => (
+                        <div 
+                          key={idx}
+                          className="relative group cursor-pointer overflow-hidden rounded-lg"
+                          onClick={() => openLightbox(url)}
+                        >
+                          <img
+                            src={url}
+                            alt={`Semana ${update.week_number} - ${['Frente', 'Lateral', 'Costas'][idx]}`}
+                            className="w-full h-48 object-cover transition-transform group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Eye className="h-8 w-8 text-white" />
+                          </div>
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <Badge variant="secondary" className="w-full justify-center">
+                              {['Frente', 'Lateral', 'Costas'][idx]}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Insights para Admin */}
       {updates.length > 0 && (
-        <AIProgressInsights profile={profileForComponents} updates={updates} />
+        <AdminAIInsights mentee={mentee} status={status} updates={updates} />
       )}
 
       {/* Pattern Detection */}
@@ -267,6 +358,29 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
           </CardContent>
         </Card>
       )}
+
+      {/* Modals */}
+      {showPhotoComparison && selectedUpdates.length === 2 && (
+        <PhotoComparisonModal
+          open={showPhotoComparison}
+          onClose={() => setShowPhotoComparison(false)}
+          update1={selectedUpdates[0]}
+          update2={selectedUpdates[1]}
+        />
+      )}
+
+      {/* Lightbox */}
+      <Dialog open={!!lightboxPhoto} onOpenChange={() => setLightboxPhoto(null)}>
+        <DialogContent className="max-w-4xl">
+          {lightboxPhoto && (
+            <img 
+              src={lightboxPhoto} 
+              alt="Foto ampliada" 
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

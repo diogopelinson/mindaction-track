@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MenteeData, MenteeStatus, calculateProgressPercentage } from "@/lib/adminUtils";
 import { getZoneColor, getZoneLabel } from "@/lib/progressUtils";
 import { Search, ArrowUpDown, Eye } from "lucide-react";
+import { ExportReports } from "./ExportReports";
 
 interface MenteeTableProps {
   mentees: Array<{ mentee: MenteeData; status: MenteeStatus }>;
@@ -103,10 +104,15 @@ const MenteeTable = ({ mentees, onSelectMentee }: MenteeTableProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Todos os Mentorados</CardTitle>
-        <CardDescription>
-          {filteredAndSortedMentees.length} de {mentees.length} mentorados
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Todos os Mentorados</CardTitle>
+            <CardDescription>
+              {filteredAndSortedMentees.length} de {mentees.length} mentorados
+            </CardDescription>
+          </div>
+          <ExportReports mentees={mentees} />
+        </div>
       </CardHeader>
       <CardContent>
         {/* Filters */}

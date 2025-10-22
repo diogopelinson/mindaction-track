@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { CheckInTutorial } from "@/components/CheckInTutorial";
+import { BodyFatGuide } from "@/components/BodyFatGuide";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const CheckIn = () => {
   const navigate = useNavigate();
@@ -19,6 +22,8 @@ const CheckIn = () => {
   const [frontPhoto, setFrontPhoto] = useState<File | null>(null);
   const [sidePhoto, setSidePhoto] = useState<File | null>(null);
   const [backPhoto, setBackPhoto] = useState<File | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
   useEffect(() => {
     checkAuthAndPermissions();
@@ -59,7 +64,17 @@ const CheckIn = () => {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id);
 
-      setWeekNumber((count || 0) + 1);
+      const newWeekNumber = (count || 0) + 1;
+      setWeekNumber(newWeekNumber);
+      
+      // Verificar se é o primeiro check-in e se já viu o tutorial
+      if (newWeekNumber === 1) {
+        const hasSeenTutorial = localStorage.getItem('hasSeenCheckInTutorial');
+        if (!hasSeenTutorial) {
+          setShowTutorial(true);
+        }
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Auth error:', error);
@@ -73,6 +88,48 @@ const CheckIn = () => {
     }
   };
 
+  const validateMeasurements = (neck: number, waist: number, hip?: number | null) => {
+    const warnings: string[] = [];
+    
+    if (neck < 25 || neck > 60) {
+      warnings.push("Medida do pescoço parece incomum. Verifique se está correta.");
+    }
+    
+    if (waist < 50 || waist > 150) {
+      warnings.push("Medida da cintura parece incomum. Verifique se está correta.");
+    }
+    
+    if (waist <= neck) {
+      warnings.push("A cintura deve ser maior que o pescoço. Verifique as medidas.");
+    }
+    
+    if (hip && hip < waist) {
+      warnings.push("O quadril geralmente é maior que a cintura. Verifique as medidas.");
+    }
+    
+    return warnings;
+  };
+
+  const handleMeasurementChange = () => {
+    const neckInput = document.getElementById("neck_circumference") as HTMLInputElement;
+    const waistInput = document.getElementById("waist_circumference") as HTMLInputElement;
+    const hipInput = document.getElementById("hip_circumference") as HTMLInputElement;
+    
+    const neck = parseFloat(neckInput?.value || "0");
+    const waist = parseFloat(waistInput?.value || "0");
+    const hip = profile?.sex === "female" ? parseFloat(hipInput?.value || "0") : null;
+    
+    if (neck > 0 && waist > 0) {
+      const warnings = validateMeasurements(neck, waist, hip);
+      setValidationWarnings(warnings);
+    }
+  };
+
+  const completeTutorial = () => {
+    localStorage.setItem('hasSeenCheckInTutorial', 'true');
+    setShowTutorial(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -82,6 +139,17 @@ const CheckIn = () => {
     const waist = parseFloat(formData.get("waist_circumference") as string);
     const hip = profile?.sex === "female" ? parseFloat(formData.get("hip_circumference") as string) : null;
     const notes = formData.get("notes") as string;
+
+    // Validação final
+    const warnings = validateMeasurements(neck, waist, hip);
+    if (warnings.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Verifique as medidas",
+        description: warnings.join(" "),
+      });
+      return;
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -144,8 +212,10 @@ const CheckIn = () => {
     );
   }
 
-
   return (
+    <>
+      {showTutorial && <CheckInTutorial onComplete={completeTutorial} />}
+      
     <div className="min-h-screen p-4 pb-20">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
@@ -177,12 +247,27 @@ const CheckIn = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Medidas (cm)</CardTitle>
-              <CardDescription>
-                As medidas são usadas para calcular o percentual de gordura corporal pelo Método Navy
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Medidas (cm)</CardTitle>
+                  <CardDescription>
+                    As medidas são usadas para calcular o percentual de gordura corporal pelo Método Navy
+                  </CardDescription>
+                </div>
+                <BodyFatGuide />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {validationWarnings.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {validationWarnings.map((warning, i) => (
+                      <div key={i}>• {warning}</div>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div>
                 <Label htmlFor="neck_circumference">Circunferência do Pescoço *</Label>
                 <Input
@@ -192,7 +277,11 @@ const CheckIn = () => {
                   step="0.1"
                   required
                   placeholder="38.0"
+                  onChange={handleMeasurementChange}
+                  min="25"
+                  max="60"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Valores típicos: 30-45 cm</p>
               </div>
               <div>
                 <Label htmlFor="waist_circumference">Circunferência da Cintura *</Label>
@@ -203,7 +292,11 @@ const CheckIn = () => {
                   step="0.1"
                   required
                   placeholder="90.0"
+                  onChange={handleMeasurementChange}
+                  min="50"
+                  max="150"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Valores típicos: 60-120 cm</p>
               </div>
               {profile?.sex === "female" && (
                 <div>
@@ -215,7 +308,11 @@ const CheckIn = () => {
                     step="0.1"
                     required
                     placeholder="100.0"
+                    onChange={handleMeasurementChange}
+                    min="50"
+                    max="170"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Valores típicos: 80-130 cm</p>
                 </div>
               )}
             </CardContent>
@@ -316,6 +413,7 @@ const CheckIn = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 
