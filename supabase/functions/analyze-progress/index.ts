@@ -13,6 +13,44 @@ serve(async (req) => {
 
   try {
     const { profile, updates } = await req.json();
+
+    // Input validation
+    if (!profile || typeof profile !== 'object') {
+      console.error('Invalid profile data');
+      return new Response(
+        JSON.stringify({ error: 'Invalid profile data' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!Array.isArray(updates)) {
+      console.error('Updates must be an array');
+      return new Response(
+        JSON.stringify({ error: 'Updates must be an array' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (updates.length > 100) {
+      console.error('Too many updates:', updates.length);
+      return new Response(
+        JSON.stringify({ error: 'Too many updates (max 100)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate required profile fields
+    const requiredFields = ['initial_weight', 'goal_type'];
+    for (const field of requiredFields) {
+      if (!(field in profile)) {
+        console.error('Missing required field:', field);
+        return new Response(
+          JSON.stringify({ error: `Missing required field: ${field}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {

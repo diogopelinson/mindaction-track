@@ -12,6 +12,7 @@ import BottomNav from "@/components/BottomNav";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { profileUpdateSchema } from "@/lib/validationSchemas";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -155,6 +156,23 @@ const Profile = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Validação com zod
+      const validation = profileUpdateSchema.safeParse({
+        phone: editedProfile.phone,
+        height: editedProfile.height,
+        targetWeight: editedProfile.target_weight,
+      });
+
+      if (!validation.success) {
+        toast({
+          variant: "destructive",
+          title: "Dados inválidos",
+          description: validation.error.issues[0].message,
+        });
+        setIsLoading(false);
+        return;
+      }
 
       const { error } = await supabase
         .from('profiles')

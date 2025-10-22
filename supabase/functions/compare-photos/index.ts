@@ -13,6 +13,43 @@ serve(async (req) => {
 
   try {
     const { photoUrls, weekNumber } = await req.json();
+
+    // Input validation
+    if (!Array.isArray(photoUrls)) {
+      console.error('photoUrls must be an array');
+      return new Response(
+        JSON.stringify({ error: 'photoUrls must be an array' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (photoUrls.length === 0 || photoUrls.length > 3) {
+      console.error('Invalid number of photos:', photoUrls.length);
+      return new Response(
+        JSON.stringify({ error: 'Must provide 1-3 photo URLs' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate URLs
+    for (const url of photoUrls) {
+      if (typeof url !== 'string' || !url.startsWith('http')) {
+        console.error('Invalid photo URL:', url);
+        return new Response(
+          JSON.stringify({ error: 'Invalid photo URL format' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (typeof weekNumber !== 'number' || weekNumber < 1) {
+      console.error('Invalid week number:', weekNumber);
+      return new Response(
+        JSON.stringify({ error: 'Invalid week number' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {

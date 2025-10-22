@@ -13,6 +13,50 @@ serve(async (req) => {
 
   try {
     const { messages, profile } = await req.json();
+
+    // Input validation
+    if (!Array.isArray(messages)) {
+      console.error('Messages must be an array');
+      return new Response(
+        JSON.stringify({ error: 'Messages must be an array' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (messages.length === 0 || messages.length > 50) {
+      console.error('Invalid message count:', messages.length);
+      return new Response(
+        JSON.stringify({ error: 'Must provide 1-50 messages' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate message structure
+    for (const msg of messages) {
+      if (!msg.role || !msg.content || typeof msg.content !== 'string') {
+        console.error('Invalid message format:', msg);
+        return new Response(
+          JSON.stringify({ error: 'Invalid message format' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (msg.content.length > 5000) {
+        console.error('Message too long:', msg.content.length);
+        return new Response(
+          JSON.stringify({ error: 'Message content too long (max 5000 characters)' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (!profile || typeof profile !== 'object') {
+      console.error('Invalid profile data');
+      return new Response(
+        JSON.stringify({ error: 'Invalid profile data' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {

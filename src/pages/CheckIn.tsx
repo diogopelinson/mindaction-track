@@ -12,6 +12,7 @@ import logo from "@/assets/logo.png";
 import { CheckInTutorial } from "@/components/CheckInTutorial";
 import { BodyFatGuide } from "@/components/BodyFatGuide";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { checkInSchema } from "@/lib/validationSchemas";
 
 const CheckIn = () => {
   const navigate = useNavigate();
@@ -140,7 +141,25 @@ const CheckIn = () => {
     const hip = profile?.sex === "female" ? parseFloat(formData.get("hip_circumference") as string) : null;
     const notes = formData.get("notes") as string;
 
-    // Validação final
+    // Validação com zod
+    const validation = checkInSchema.safeParse({
+      weight,
+      neckCircumference: neck || undefined,
+      waistCircumference: waist || undefined,
+      hipCircumference: hip || undefined,
+      notes: notes || undefined,
+    });
+
+    if (!validation.success) {
+      toast({
+        variant: "destructive",
+        title: "Dados inválidos",
+        description: validation.error.issues[0].message,
+      });
+      return;
+    }
+
+    // Validação adicional de medidas
     const warnings = validateMeasurements(neck, waist, hip);
     if (warnings.length > 0) {
       toast({
