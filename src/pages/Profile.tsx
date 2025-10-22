@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { profileUpdateSchema } from "@/lib/validationSchemas";
+import { logAudit } from "@/lib/auditLogger";
+import { getSignedPhotoUrl } from "@/lib/storageUtils";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<any>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarSignedUrl, setAvatarSignedUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +59,13 @@ const Profile = () => {
 
       setProfile(data);
       setEditedProfile(data);
+
+      // Carregar URL assinada do avatar se existir
+      if (data.avatar_url) {
+        const signedUrl = await getSignedPhotoUrl('avatars', data.avatar_url);
+        setAvatarSignedUrl(signedUrl);
+      }
+
       setIsLoading(false);
     } catch (error) {
       console.error('Auth error:', error);
@@ -120,21 +130,27 @@ const Profile = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update profile
+      // Armazenar apenas o caminho, não a URL pública
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: filePath })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      setProfile({ ...profile, avatar_url: publicUrl });
-      setEditedProfile({ ...editedProfile, avatar_url: publicUrl });
+      // Gerar URL assinada para exibição
+      const signedUrl = await getSignedPhotoUrl('avatars', filePath);
+      setAvatarSignedUrl(signedUrl);
+
+      setProfile({ ...profile, avatar_url: filePath });
+      setEditedProfile({ ...editedProfile, avatar_url: filePath });
+
+      // Log de auditoria
+      await logAudit({
+        action: 'photo.upload',
+        resourceType: 'avatar',
+        details: { file_name: filePath }
+      });
 
       toast({
         title: "Foto atualizada!",
@@ -187,6 +203,14 @@ const Profile = () => {
 
       setProfile(editedProfile);
       setIsEditing(false);
+
+      // Log de auditoria
+      await logAudit({
+        action: 'profile.update',
+        resourceType: 'profile',
+        details: { fields_updated: ['phone', 'height', 'target_weight'] }
+      });
+
       toast({
         title: "Perfil atualizado",
         description: "Suas informações foram salvas com sucesso.",
@@ -267,7 +291,7 @@ const Profile = () => {
               <div className="relative mb-4 group">
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg animate-pulse" />
                 <Avatar className="relative h-32 w-32 border-4 border-background shadow-xl">
-                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                  <AvatarImage src={avatarSignedUrl || undefined} alt={profile.full_name} />
                   <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bebas">
                     {getInitials(profile.full_name)}
                   </AvatarFallback>

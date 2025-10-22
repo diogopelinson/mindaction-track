@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/auditLogger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,10 +187,8 @@ const CheckIn = () => {
           .upload(fileName, photos[i]!);
 
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from("weekly-photos")
-            .getPublicUrl(fileName);
-          photoUrls.push(publicUrl);
+          // Armazenar apenas o caminho do arquivo, não a URL pública
+          photoUrls.push(fileName);
         }
       }
     }
@@ -215,6 +214,13 @@ const CheckIn = () => {
         description: error.message,
       });
     } else {
+      // Log de auditoria
+      await logAudit({
+        action: 'checkin.create',
+        resourceType: 'weekly_update',
+        details: { week_number: weekNumber, weight, has_photos: photoUrls.length > 0 }
+      });
+
       toast({
         title: "Check-in realizado com sucesso!",
         description: "Seus dados foram salvos.",
