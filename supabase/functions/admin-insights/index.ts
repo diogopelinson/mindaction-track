@@ -8,6 +8,13 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // LOG IMEDIATO para debug
+  console.log('🔵 admin-insights function called', {
+    method: req.method,
+    timestamp: new Date().toISOString(),
+    hasAuth: !!req.headers.get('authorization')
+  });
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,6 +22,7 @@ serve(async (req) => {
   try {
     // Verify JWT and check admin role
     const authHeader = req.headers.get('authorization');
+    console.log('🔐 Checking authorization...', { hasAuthHeader: !!authHeader });
     if (!authHeader) {
       throw new Error('Missing authorization header');
     }
@@ -26,14 +34,26 @@ serve(async (req) => {
     );
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('👤 Auth check result:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      hasError: !!authError,
+      errorMessage: authError?.message 
+    });
+    
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error('❌ Authentication failed:', authError?.message);
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized', 
+        details: authError?.message || 'No user found' 
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // Verify admin role
+    console.log('👑 Checking admin role for user:', user.id);
     const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
@@ -41,34 +61,94 @@ serve(async (req) => {
       .eq('role', 'admin')
       .maybeSingle();
 
+    console.log('👑 Role check result:', { 
+      hasRole: !!roleData, 
+      role: roleData?.role,
+      hasError: !!roleError,
+      errorMessage: roleError?.message 
+    });
+
     if (roleError || !roleData) {
-      return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), {
+      console.error('❌ Authorization failed: User is not admin');
+      return new Response(JSON.stringify({ 
+        error: 'Forbidden: Admin access required',
+        details: roleError?.message || 'User does not have admin role'
+      }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { mentee, status, updates } = await req.json();
+    console.log('📦 Parsing request body...');
+    const body = await req.json();
+    const { mentee, status, updates } = body;
 
     // Input validation with detailed logging
-    if (!mentee || !status || !Array.isArray(updates)) {
-      console.error('Invalid input:', { 
-        hasMentee: !!mentee, 
-        hasStatus: !!status, 
-        updatesIsArray: Array.isArray(updates) 
+    console.log('✅ Validating input data:', { 
+      hasMentee: !!mentee, 
+      hasStatus: !!status, 
+      updatesIsArray: Array.isArray(updates),
+      updatesCount: Array.isArray(updates) ? updates.length : 0,
+      menteeId: mentee?.id,
+      menteeName: mentee?.full_name
+    });
+
+    if (!mentee || !mentee.id || !mentee.full_name) {
+      console.error('❌ Invalid mentee data:', mentee);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid mentee data',
+        details: 'Mentee must have id and full_name' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      throw new Error('Invalid input data');
+    }
+
+    if (!status || typeof status.needsAttention === 'undefined') {
+      console.error('❌ Invalid status data:', status);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid status data',
+        details: 'Status must include needsAttention field' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!Array.isArray(updates)) {
+      console.error('❌ Invalid updates data:', updates);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid updates data',
+        details: 'Updates must be an array' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (updates.length > 100) {
-      throw new Error('Too many updates provided');
+      console.error('❌ Too many updates:', updates.length);
+      return new Response(JSON.stringify({ 
+        error: 'Too many updates provided',
+        details: `Received ${updates.length} updates, maximum is 100` 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     
+    console.log('🔑 Checking LOVABLE_API_KEY...');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
-      throw new Error('LOVABLE_API_KEY not configured');
+      console.error('❌ LOVABLE_API_KEY not configured');
+      return new Response(JSON.stringify({ 
+        error: 'Configuration error',
+        details: 'LOVABLE_API_KEY is not configured' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Preparar dados para análise do admin com fallbacks seguros
@@ -128,6 +208,7 @@ FORNEÇA UMA ANÁLISE EM PORTUGUÊS BRASILEIRO COM:
 
 Seja DIRETO, ESPECÍFICO e focado em AÇÃO para o admin. Use linguagem profissional mas clara. Máximo 250 palavras.`;
 
+    console.log('🤖 Calling Lovable AI API...');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -146,23 +227,40 @@ Seja DIRETO, ESPECÍFICO e focado em AÇÃO para o admin. Use linguagem profissi
       }),
     });
 
+    console.log('📡 AI API response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      console.error('❌ AI API error:', response.status, errorText);
+      return new Response(JSON.stringify({ 
+        error: `AI API error: ${response.status}`,
+        details: errorText 
+      }), {
+        status: response.status === 429 ? 429 : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
     const insights = data.choices[0].message.content;
+    console.log('✅ Insights generated successfully');
 
     return new Response(
       JSON.stringify({ insights }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in admin-insights:', error);
+    console.error('❌ FATAL ERROR in admin-insights:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

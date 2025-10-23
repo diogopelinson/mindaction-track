@@ -23,39 +23,92 @@ const AdminAIInsights = ({ mentee, status, updates }: AdminAIInsightsProps) => {
 
   const generateInsights = async () => {
     setIsLoading(true);
+    setInsights(''); // Limpar insights anteriores
+    
     try {
-      console.log('Calling admin-insights with:', {
+      // Verificar autenticação primeiro
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('❌ Session error:', sessionError);
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      console.log('✅ Session valid, calling admin-insights with:', {
         menteeId: mentee.id,
         menteeName: mentee.full_name,
         updatesCount: updates.length,
-        statusNeedsAttention: status.needsAttention
+        statusNeedsAttention: status.needsAttention,
+        userId: session.user.id
       });
 
       const { data, error } = await supabase.functions.invoke('admin-insights', {
-        body: { mentee, status, updates }
+        body: { 
+          mentee: {
+            id: mentee.id,
+            full_name: mentee.full_name,
+            goal_type: mentee.goal_type,
+            initial_weight: mentee.initial_weight,
+            target_weight: mentee.target_weight
+          }, 
+          status: {
+            needsAttention: status.needsAttention,
+            attentionReasons: status.attentionReasons || [],
+            lastUpdateDaysAgo: status.lastUpdateDaysAgo || 0
+          }, 
+          updates 
+        }
       });
 
-      console.log('admin-insights response:', { data, error });
+      console.log('📡 admin-insights response:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        errorDetails: error 
+      });
 
       if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+        console.error('❌ Supabase function error:', error);
+        
+        // Tratamento específico por tipo de erro
+        if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+          throw new Error('Não autorizado. Verifique se você está logado como administrador.');
+        }
+        
+        if (error.message?.includes('403') || error.message?.includes('Forbidden')) {
+          throw new Error('Acesso negado. Você precisa ser um administrador para acessar esta funcionalidade.');
+        }
+        
+        if (error.message?.includes('429')) {
+          throw new Error('Muitas requisições. Aguarde um momento e tente novamente.');
+        }
+
+        throw new Error(error.message || 'Erro ao chamar a função');
       }
 
       if (!data || !data.insights) {
-        throw new Error('No insights returned from function');
+        console.error('❌ No insights in response:', data);
+        throw new Error('Nenhum insight foi retornado pela IA');
       }
 
+      console.log('✅ Insights generated successfully');
       setInsights(data.insights);
+      
+      toast({
+        title: "Insights gerados com sucesso",
+        description: "A análise da IA está pronta.",
+      });
+      
     } catch (error) {
-      console.error('Error generating admin insights:', error);
+      console.error('❌ Error generating admin insights:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
       toast({
         variant: "destructive",
         title: "Erro ao gerar insights",
-        description: `Não foi possível gerar os insights: ${errorMessage}`,
+        description: errorMessage,
       });
-      setInsights('Erro ao gerar insights. Verifique os logs do console para mais detalhes.');
+      
+      setInsights(`Erro: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -92,15 +145,33 @@ const AdminAIInsights = ({ mentee, status, updates }: AdminAIInsightsProps) => {
             <p className="text-sm">Gerando análise estratégica...</p>
           </div>
         ) : insights ? (
-          <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-line text-sm leading-relaxed">
-              {insights}
+          <div className="space-y-3">
+            <div className="prose prose-sm max-w-none">
+              <div className="whitespace-pre-line text-sm leading-relaxed">
+                {insights}
+              </div>
             </div>
+            <button
+              onClick={generateInsights}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              Gerar nova análise
+            </button>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Não foi possível gerar insights no momento.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Não foi possível gerar insights no momento.
+            </p>
+            <button
+              onClick={generateInsights}
+              className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              Tentar novamente
+            </button>
+          </div>
         )}
       </CardContent>
     </Card>
