@@ -16,6 +16,8 @@ import AdminAIInsights from "./AdminAIInsights";
 import { PhotoComparisonModal } from "./PhotoComparisonModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SecureImage } from "@/components/SecureImage";
+import { MenteeFullDataView } from "./MenteeFullDataView";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MenteeDetailViewProps {
   mentee: MenteeData;
@@ -102,6 +104,15 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
           </div>
         </div>
       </div>
+
+      {/* Tabs para diferentes visualizações */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="full-data">Dados Completos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6 mt-6">
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -360,6 +371,12 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="full-data" className="mt-6">
+          <MenteeFullDataView mentee={mentee} />
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       {showPhotoComparison && selectedUpdates.length === 2 && (
@@ -373,7 +390,8 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
 
       {/* Lightbox */}
       <Dialog open={!!lightboxPhoto} onOpenChange={() => setLightboxPhoto(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl" aria-describedby="lightbox-description">
+          <p id="lightbox-description" className="sr-only">Visualização ampliada da foto de progresso</p>
           {lightboxPhoto && (
             <SecureImage 
               bucket="weekly-photos"

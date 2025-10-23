@@ -24,20 +24,38 @@ const AdminAIInsights = ({ mentee, status, updates }: AdminAIInsightsProps) => {
   const generateInsights = async () => {
     setIsLoading(true);
     try {
+      console.log('Calling admin-insights with:', {
+        menteeId: mentee.id,
+        menteeName: mentee.full_name,
+        updatesCount: updates.length,
+        statusNeedsAttention: status.needsAttention
+      });
+
       const { data, error } = await supabase.functions.invoke('admin-insights', {
         body: { mentee, status, updates }
       });
 
-      if (error) throw error;
+      console.log('admin-insights response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.insights) {
+        throw new Error('No insights returned from function');
+      }
 
       setInsights(data.insights);
     } catch (error) {
       console.error('Error generating admin insights:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         variant: "destructive",
         title: "Erro ao gerar insights",
-        description: "Não foi possível gerar os insights do administrador.",
+        description: `Não foi possível gerar os insights: ${errorMessage}`,
       });
+      setInsights('Erro ao gerar insights. Verifique os logs do console para mais detalhes.');
     } finally {
       setIsLoading(false);
     }

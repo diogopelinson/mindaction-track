@@ -11,6 +11,9 @@ export interface MenteeData {
   target_weight: number;
   goal_type: 'perda_peso' | 'ganho_massa';
   created_at: string;
+  phone?: string;
+  cpf?: string;
+  avatar_url?: string;
   updates?: WeeklyUpdate[];
 }
 
