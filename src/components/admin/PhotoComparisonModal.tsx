@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { SecureImage } from "@/components/SecureImage";
 
 interface PhotoComparisonModalProps {
   open: boolean;
@@ -87,8 +88,9 @@ export const PhotoComparisonModal = ({ open, onClose, update1, update2 }: PhotoC
                         <span className="text-sm text-muted-foreground">{update1.weight.toFixed(1)} kg</span>
                       </div>
                       {photo1 ? (
-                        <img
-                          src={photo1}
+                        <SecureImage
+                          bucket="weekly-photos"
+                          path={photo1}
                           alt={`Semana ${update1.week_number} - ${label}`}
                           className="w-full h-80 object-cover rounded-lg border"
                         />
@@ -106,8 +108,9 @@ export const PhotoComparisonModal = ({ open, onClose, update1, update2 }: PhotoC
                         <span className="text-sm text-muted-foreground">{update2.weight.toFixed(1)} kg</span>
                       </div>
                       {photo2 ? (
-                        <img
-                          src={photo2}
+                        <SecureImage
+                          bucket="weekly-photos"
+                          path={photo2}
                           alt={`Semana ${update2.week_number} - ${label}`}
                           className="w-full h-80 object-cover rounded-lg border"
                         />

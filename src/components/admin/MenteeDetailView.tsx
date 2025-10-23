@@ -15,6 +15,7 @@ import GoalPrediction from "@/components/GoalPrediction";
 import AdminAIInsights from "./AdminAIInsights";
 import { PhotoComparisonModal } from "./PhotoComparisonModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { SecureImage } from "@/components/SecureImage";
 
 interface MenteeDetailViewProps {
   mentee: MenteeData;
@@ -261,8 +262,9 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
                           className="relative group cursor-pointer overflow-hidden rounded-lg"
                           onClick={() => openLightbox(url)}
                         >
-                          <img
-                            src={url}
+                          <SecureImage
+                            bucket="weekly-photos"
+                            path={url}
                             alt={`Semana ${update.week_number} - ${['Frente', 'Lateral', 'Costas'][idx]}`}
                             className="w-full h-48 object-cover transition-transform group-hover:scale-105"
                           />
@@ -373,8 +375,9 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
       <Dialog open={!!lightboxPhoto} onOpenChange={() => setLightboxPhoto(null)}>
         <DialogContent className="max-w-4xl">
           {lightboxPhoto && (
-            <img 
-              src={lightboxPhoto} 
+            <SecureImage 
+              bucket="weekly-photos"
+              path={lightboxPhoto} 
               alt="Foto ampliada" 
               className="w-full h-auto max-h-[80vh] object-contain"
             />
