@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          badge_type: string
+          created_at: string | null
+          earned_at: string | null
+          id: string
+          milestone_value: number | null
+          user_id: string
+        }
+        Insert: {
+          badge_type: string
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          milestone_value?: number | null
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          milestone_value?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_notes: {
+        Row: {
+          admin_id: string
+          created_at: string | null
+          id: string
+          is_private: boolean | null
+          mentee_id: string
+          note: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string | null
+          id?: string
+          is_private?: boolean | null
+          mentee_id: string
+          note: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string | null
+          id?: string
+          is_private?: boolean | null
+          mentee_id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_notes_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_requests: {
         Row: {
           cpf: string
@@ -50,6 +119,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_chat_history: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -82,6 +175,143 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      generated_reports: {
+        Row: {
+          created_at: string | null
+          file_url: string | null
+          id: string
+          period_end: string | null
+          period_start: string | null
+          report_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      intermediate_goals: {
+        Row: {
+          achieved: boolean | null
+          achieved_at: string | null
+          created_at: string | null
+          id: string
+          target_date: string | null
+          target_weight: number
+          user_id: string
+        }
+        Insert: {
+          achieved?: boolean | null
+          achieved_at?: string | null
+          created_at?: string | null
+          id?: string
+          target_date?: string | null
+          target_weight: number
+          user_id: string
+        }
+        Update: {
+          achieved?: boolean | null
+          achieved_at?: string | null
+          created_at?: string | null
+          id?: string
+          target_date?: string | null
+          target_weight?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mentee_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          mentee_id: string
+          tag_color: string | null
+          tag_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mentee_id: string
+          tag_color?: string | null
+          tag_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mentee_id?: string
+          tag_color?: string | null
+          tag_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentee_tags_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          created_at: string | null
+          from_id: string
+          id: string
+          message: string
+          read: boolean | null
+          subject: string
+          to_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_id: string
+          id?: string
+          message: string
+          read?: boolean | null
+          subject: string
+          to_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_id?: string
+          id?: string
+          message?: string
+          read?: boolean | null
+          subject?: string
+          to_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_from_id_fkey"
+            columns: ["from_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_to_id_fkey"
+            columns: ["to_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -177,6 +407,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          notification_day: number | null
+          notification_time: string | null
+          push_enabled: boolean | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          notification_day?: number | null
+          notification_time?: string | null
+          push_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          notification_day?: number | null
+          notification_time?: string | null
+          push_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

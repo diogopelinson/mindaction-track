@@ -12,6 +12,7 @@ import Help from "./pages/Help";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AICoach from "./pages/AICoach";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -57,6 +58,11 @@ const App = () => (
           <Route path="/ai-coach" element={
             <ProtectedRoute requireRole="mentee">
               <AICoach />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute requireRole="mentee">
+              <Calendar />
             </ProtectedRoute>
           } />
           

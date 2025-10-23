@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, PlusCircle, History, Brain, User } from "lucide-react";
+import { Home, PlusCircle, CalendarDays, Brain, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const BottomNav = () => {
@@ -9,7 +9,7 @@ const BottomNav = () => {
   const navItems = [
     { icon: Home, label: "Início", path: "/dashboard" },
     { icon: PlusCircle, label: "Check-in", path: "/checkin" },
-    { icon: History, label: "Histórico", path: "/history" },
+    { icon: CalendarDays, label: "Calendário", path: "/calendar" },
     { icon: Brain, label: "Coach IA", path: "/ai-coach" },
     { icon: User, label: "Perfil", path: "/profile" },
   ];

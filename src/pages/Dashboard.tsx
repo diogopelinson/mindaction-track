@@ -16,6 +16,10 @@ import ProgressRing from "@/components/ProgressRing";
 import AIProgressInsights from "@/components/AIProgressInsights";
 import GoalPrediction from "@/components/GoalPrediction";
 import PatternDetection from "@/components/PatternDetection";
+import { AchievementsDisplay } from "@/components/AchievementsDisplay";
+import { IntermediateGoals } from "@/components/IntermediateGoals";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAchievements } from "@/hooks/useAchievements";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,6 +29,7 @@ const Dashboard = () => {
   const [latestUpdate, setLatestUpdate] = useState<any>(null);
   const [allUpdates, setAllUpdates] = useState<any[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
+  const { checkAndAwardAchievements } = useAchievements();
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -77,6 +82,10 @@ const Dashboard = () => {
 
         if (allData) {
           setAllUpdates(allData);
+          // Check for new achievements
+          if (profileData) {
+            checkAndAwardAchievements(allData, profileData);
+          }
         }
 
         // Count check-ins
@@ -165,6 +174,7 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Bem-vindo ao Mapa MindFitness</p>
             </div>
           </div>
+          <ThemeToggle />
         </div>
 
         {/* Quick Actions */}
@@ -235,6 +245,16 @@ const Dashboard = () => {
             description={latestUpdate?.body_fat_percentage ? 'Método Navy' : 'Aguardando medidas'}
           />
         </div>
+
+        {/* Achievements - Show compact version */}
+        {allUpdates.length > 0 && (
+          <AchievementsDisplay compact />
+        )}
+
+        {/* Intermediate Goals */}
+        {allUpdates.length > 0 && (
+          <IntermediateGoals />
+        )}
 
         {/* Progress Overview */}
         <Card>

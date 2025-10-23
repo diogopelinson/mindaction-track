@@ -18,6 +18,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SecureImage } from "@/components/SecureImage";
 import { MenteeFullDataView } from "./MenteeFullDataView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NotesPanel } from "./NotesPanel";
+import { TagsManager } from "./TagsManager";
 
 interface MenteeDetailViewProps {
   mentee: MenteeData;
@@ -105,10 +107,21 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
         </div>
       </div>
 
+      {/* Tags Manager */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tags</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TagsManager menteeId={mentee.id} />
+        </CardContent>
+      </Card>
+
       {/* Tabs para diferentes visualizações */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="notes">Notas</TabsTrigger>
           <TabsTrigger value="full-data">Dados Completos</TabsTrigger>
         </TabsList>
 
@@ -366,6 +379,10 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="notes" className="mt-6">
+          <NotesPanel menteeId={mentee.id} />
         </TabsContent>
 
         <TabsContent value="full-data" className="mt-6">
