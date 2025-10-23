@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,34 +13,43 @@ serve(async (req) => {
   }
 
   try {
-    const { photoUrls, weekNumber } = await req.json();
+    // Verify JWT and check admin role
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { photoPaths, weekNumber } = await req.json();
 
     // Input validation
-    if (!Array.isArray(photoUrls)) {
-      console.error('photoUrls must be an array');
+    if (!Array.isArray(photoPaths)) {
+      console.error('photoPaths must be an array');
       return new Response(
-        JSON.stringify({ error: 'photoUrls must be an array' }),
+        JSON.stringify({ error: 'photoPaths must be an array' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (photoUrls.length === 0 || photoUrls.length > 3) {
-      console.error('Invalid number of photos:', photoUrls.length);
+    if (photoPaths.length === 0 || photoPaths.length > 3) {
+      console.error('Invalid number of photos:', photoPaths.length);
       return new Response(
-        JSON.stringify({ error: 'Must provide 1-3 photo URLs' }),
+        JSON.stringify({ error: 'Must provide 1-3 photo paths' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    // Validate URLs
-    for (const url of photoUrls) {
-      if (typeof url !== 'string' || !url.startsWith('http')) {
-        console.error('Invalid photo URL:', url);
-        return new Response(
-          JSON.stringify({ error: 'Invalid photo URL format' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
     }
 
     if (typeof weekNumber !== 'number' || weekNumber < 1) {
@@ -48,6 +58,25 @@ serve(async (req) => {
         JSON.stringify({ error: 'Invalid week number' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Generate signed URLs for private photos
+    const signedUrls = [];
+    for (const path of photoPaths) {
+      const cleanPath = path.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, '');
+      const { data, error } = await supabase.storage
+        .from('weekly-photos')
+        .createSignedUrl(cleanPath, 3600);
+      
+      if (error || !data) {
+        console.error('Failed to generate signed URL for:', cleanPath, error);
+        continue;
+      }
+      signedUrls.push(data.signedUrl);
+    }
+
+    if (signedUrls.length === 0) {
+      throw new Error('Failed to generate signed URLs for photos');
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -60,7 +89,7 @@ serve(async (req) => {
     const content = [
       {
         type: "text",
-        text: `Você é um especialista em análise de composição corporal. Analise estas ${photoUrls.length} fotos de progresso da semana ${weekNumber} de um cliente.
+        text: `Você é um especialista em análise de composição corporal. Analise estas ${signedUrls.length} fotos de progresso da semana ${weekNumber} de um cliente.
 
 Forneça uma análise visual detalhada em português brasileiro incluindo:
 1. Mudanças visíveis na composição corporal (postura, definição muscular, etc.)
@@ -73,10 +102,10 @@ Seja específico, profissional e motivador. Máximo 250 palavras.`
     ];
 
     // Add up to 3 images
-    for (let i = 0; i < Math.min(photoUrls.length, 3); i++) {
+    for (let i = 0; i < Math.min(signedUrls.length, 3); i++) {
       content.push({
         type: "image_url",
-        image_url: { url: photoUrls[i] }
+        image_url: { url: signedUrls[i] }
       } as any);
     }
 

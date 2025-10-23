@@ -50,28 +50,47 @@ serve(async (req) => {
 
     const { mentee, status, updates } = await req.json();
 
-    // Input validation
+    // Input validation with detailed logging
     if (!mentee || !status || !Array.isArray(updates)) {
+      console.error('Invalid input:', { 
+        hasMentee: !!mentee, 
+        hasStatus: !!status, 
+        updatesIsArray: Array.isArray(updates) 
+      });
       throw new Error('Invalid input data');
     }
 
     if (updates.length > 100) {
       throw new Error('Too many updates provided');
     }
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Preparar dados para análise do admin
-    const currentWeight = updates[updates.length - 1]?.weight || mentee.initial_weight;
+    // Preparar dados para análise do admin com fallbacks seguros
+    const sortedUpdates = [...updates].sort((a, b) => a.week_number - b.week_number);
+    const currentWeight = sortedUpdates[sortedUpdates.length - 1]?.weight || mentee.initial_weight;
     const weightChange = currentWeight - mentee.initial_weight;
-    const progressPercent = ((weightChange / (mentee.target_weight - mentee.initial_weight)) * 100).toFixed(1);
+    const targetDiff = mentee.target_weight - mentee.initial_weight;
+    const progressPercent = targetDiff !== 0 
+      ? ((weightChange / targetDiff) * 100).toFixed(1)
+      : '0.0';
     
-    const recentZones = updates.slice(-4).map((u: any) => u.zone || 'verde').join(' → ');
-    const lastCheckInDays = status.lastUpdateDaysAgo;
-    const attentionReasons = status.attentionReasons.join('; ');
+    const recentZones = sortedUpdates.slice(-4).map((u: any) => u.zone || 'verde').join(' → ');
+    const lastCheckInDays = status.lastUpdateDaysAgo || 0;
+    const attentionReasons = (status.attentionReasons || []).join('; ');
+    
+    console.log('Admin insights request:', {
+      menteeName: mentee.full_name,
+      updatesCount: updates.length,
+      currentWeight,
+      progressPercent,
+      needsAttention: status.needsAttention
+    });
     
     const prompt = `Você é um assistente de mentoria fitness para ADMINISTRADORES. Analise este mentorado e forneça insights ACIONÁVEIS para o admin tomar decisões.
 
