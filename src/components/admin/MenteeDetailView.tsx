@@ -12,7 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PatternDetection from "@/components/PatternDetection";
 import GoalPrediction from "@/components/GoalPrediction";
-import AdminAIInsights from "./AdminAIInsights";
+
 import { PhotoComparisonModal } from "./PhotoComparisonModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SecureImage } from "@/components/SecureImage";
@@ -296,11 +296,6 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* AI Insights para Admin */}
-      {updates.length > 0 && (
-        <AdminAIInsights mentee={mentee} status={status} updates={updates} />
       )}
 
       {/* Pattern Detection */}
