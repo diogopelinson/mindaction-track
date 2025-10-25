@@ -10,9 +10,6 @@ import ZoneTimeline from "./ZoneTimeline";
 import { calculateAllWeeklyZones } from "@/lib/adminUtils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import PatternDetection from "@/components/PatternDetection";
-import GoalPrediction from "@/components/GoalPrediction";
-
 import { PhotoComparisonModal } from "./PhotoComparisonModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SecureImage } from "@/components/SecureImage";
@@ -311,15 +308,7 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
         </Card>
       )}
 
-      {/* Pattern Detection */}
-      {updates.length >= 3 && (
-        <PatternDetection updates={updates} profile={profileForComponents} />
-      )}
-
-      {/* Goal Prediction */}
-      {updates.length >= 2 && (
-        <GoalPrediction profile={profileForComponents} updates={updates} />
-      )}
+      {/* Análise de padrões e predições removidas do painel admin */}
 
       {/* Check-in History Table */}
       {updates.length > 0 && (

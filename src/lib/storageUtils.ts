@@ -12,7 +12,18 @@ export async function getSignedPhotoUrl(
 
   try {
     // Remove o domínio público se estiver presente (migração de URLs antigas)
-    const cleanPath = path.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, '');
+    let cleanPath = path.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, '');
+    
+    // Se ainda tiver protocolo, extrair apenas o caminho do arquivo
+    if (cleanPath.includes('://')) {
+      const urlParts = cleanPath.split('/');
+      const bucketIndex = urlParts.findIndex(part => part === bucket);
+      if (bucketIndex !== -1) {
+        cleanPath = urlParts.slice(bucketIndex + 1).join('/');
+      }
+    }
+
+    console.log(`Generating signed URL for: ${bucket}/${cleanPath}`);
 
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -23,6 +34,7 @@ export async function getSignedPhotoUrl(
       return null;
     }
 
+    console.log(`Signed URL generated successfully for ${cleanPath}`);
     return data.signedUrl;
   } catch (error) {
     console.error('Error generating signed URL:', error);

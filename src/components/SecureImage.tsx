@@ -26,20 +26,24 @@ export const SecureImage = ({ bucket, path, alt, className, fallback }: SecureIm
         setError(false);
         
         if (!path) {
+          console.error('SecureImage: No path provided');
           setError(true);
           return;
         }
 
+        console.log(`SecureImage: Loading ${bucket}/${path}`);
         const url = await getSignedPhotoUrl(bucket, path);
         
         if (!url) {
+          console.error(`SecureImage: Failed to get signed URL for ${bucket}/${path}`);
           setError(true);
           return;
         }
 
+        console.log(`SecureImage: Successfully loaded ${bucket}/${path}`);
         setSignedUrl(url);
       } catch (err) {
-        console.error('Failed to load signed URL:', err);
+        console.error('SecureImage: Failed to load signed URL:', err);
         setError(true);
       } finally {
         setIsLoading(false);
