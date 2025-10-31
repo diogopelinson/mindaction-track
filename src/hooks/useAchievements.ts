@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { calculateWeeklyZoneByLimits, getZoneConfig } from '@/lib/progressUtils';
+import type { Zone } from '@/lib/progressUtils';
 
 export interface Achievement {
   id: string;
@@ -64,6 +66,47 @@ export const BADGE_INFO = {
     name: 'Campeão das Fotos',
     description: '10 check-ins com fotos completas',
     icon: '📸',
+  },
+  // Novas conquistas de gamificação
+  green_streak_3: {
+    name: 'Sequência Verde',
+    description: '3 semanas consecutivas na zona verde',
+    icon: '🌿',
+  },
+  green_streak_5: {
+    name: 'Dominância Verde',
+    description: '5 semanas consecutivas na zona verde',
+    icon: '🍀',
+  },
+  green_streak_10: {
+    name: 'Mestre Verde',
+    description: '10 semanas consecutivas na zona verde',
+    icon: '💚',
+  },
+  perfect_streak_4: {
+    name: 'Streak Perfeito',
+    description: '4 check-ins semanais consecutivos',
+    icon: '🔥',
+  },
+  no_red_8: {
+    name: 'Evolução Constante',
+    description: '8 semanas sem entrar na zona vermelha',
+    icon: '📈',
+  },
+  comeback: {
+    name: 'Resiliência',
+    description: 'Voltou à zona verde após 2 semanas vermelhas',
+    icon: '💪',
+  },
+  first_green: {
+    name: 'Primeira Vitória',
+    description: 'Primeira semana na zona verde',
+    icon: '⭐',
+  },
+  diamond_12: {
+    name: 'Diamante',
+    description: '12 semanas na zona verde',
+    icon: '💎',
   },
 };
 
@@ -135,6 +178,52 @@ export const useAchievements = () => {
       newBadges.push('photo_champion');
     }
 
+    // Nova gamificação: Streaks de Zona Verde
+    const greenStreak = calculateConsecutiveGreenWeeks(updates, profile);
+    if (greenStreak >= 3 && !existingBadges.includes('green_streak_3')) {
+      newBadges.push('green_streak_3');
+    }
+    if (greenStreak >= 5 && !existingBadges.includes('green_streak_5')) {
+      newBadges.push('green_streak_5');
+    }
+    if (greenStreak >= 10 && !existingBadges.includes('green_streak_10')) {
+      newBadges.push('green_streak_10');
+    }
+
+    // Primeira zona verde
+    const hasGreenZone = updates.some(u => {
+      const zone = calculateZoneForUpdate(u, profile);
+      return zone === 'green';
+    });
+    if (hasGreenZone && !existingBadges.includes('first_green')) {
+      newBadges.push('first_green');
+    }
+
+    // Diamante (12 semanas na verde)
+    const totalGreenWeeks = updates.filter(u => {
+      const zone = calculateZoneForUpdate(u, profile);
+      return zone === 'green';
+    }).length;
+    if (totalGreenWeeks >= 12 && !existingBadges.includes('diamond_12')) {
+      newBadges.push('diamond_12');
+    }
+
+    // Streak perfeito
+    if (consecutiveWeeks >= 4 && !existingBadges.includes('perfect_streak_4')) {
+      newBadges.push('perfect_streak_4');
+    }
+
+    // 8 semanas sem vermelho
+    const noRedStreak = calculateNoRedStreak(updates, profile);
+    if (noRedStreak >= 8 && !existingBadges.includes('no_red_8')) {
+      newBadges.push('no_red_8');
+    }
+
+    // Resiliência (voltou ao verde depois de vermelhas)
+    if (hasComeback(updates, profile) && !existingBadges.includes('comeback')) {
+      newBadges.push('comeback');
+    }
+
     // Insert new badges
     for (const badgeType of newBadges) {
       const { error } = await supabase
@@ -171,6 +260,96 @@ export const useAchievements = () => {
     }
     
     return consecutive;
+  };
+
+  // Função auxiliar para calcular zona de um update
+  const calculateZoneForUpdate = (update: any, profile: any): Zone => {
+    if (!profile || !update) return 'red';
+    
+    const config = getZoneConfig(profile.goal_type, profile.goal_subtype || 'padrao');
+    const yellowPercentKg = (profile.initial_weight * config.yellowMin) / 100;
+    const greenMinKg = (profile.initial_weight * config.greenMin) / 100;
+    const greenMaxKg = (profile.initial_weight * config.greenMax) / 100;
+
+    let limInf: number, projetado: number, maxAting: number;
+    
+    if (profile.goal_type === 'ganho_massa') {
+      limInf = profile.initial_weight + (yellowPercentKg * update.week_number);
+      projetado = profile.initial_weight + (greenMinKg * update.week_number);
+      maxAting = profile.initial_weight + (greenMaxKg * update.week_number);
+    } else {
+      limInf = profile.initial_weight - (yellowPercentKg * update.week_number);
+      projetado = profile.initial_weight - (greenMinKg * update.week_number);
+      maxAting = profile.initial_weight - (greenMaxKg * update.week_number);
+    }
+
+    return calculateWeeklyZoneByLimits(
+      update.weight,
+      parseFloat(limInf.toFixed(1)),
+      parseFloat(projetado.toFixed(1)),
+      parseFloat(maxAting.toFixed(1)),
+      profile.goal_type
+    );
+  };
+
+  // Calcular semanas consecutivas na zona verde
+  const calculateConsecutiveGreenWeeks = (updates: any[], profile: any): number => {
+    if (updates.length === 0) return 0;
+    
+    const sortedUpdates = [...updates].sort((a, b) => b.week_number - a.week_number);
+    let streak = 0;
+    
+    for (const update of sortedUpdates) {
+      const zone = calculateZoneForUpdate(update, profile);
+      if (zone === 'green') {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
+  // Calcular streak sem zona vermelha
+  const calculateNoRedStreak = (updates: any[], profile: any): number => {
+    if (updates.length === 0) return 0;
+    
+    const sortedUpdates = [...updates].sort((a, b) => b.week_number - a.week_number);
+    let streak = 0;
+    
+    for (const update of sortedUpdates) {
+      const zone = calculateZoneForUpdate(update, profile);
+      if (zone !== 'red') {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
+  // Detectar recuperação (voltou ao verde depois de vermelhas)
+  const hasComeback = (updates: any[], profile: any): boolean => {
+    if (updates.length < 3) return false;
+    
+    const sortedUpdates = [...updates].sort((a, b) => a.week_number - b.week_number);
+    let redCount = 0;
+    
+    for (let i = sortedUpdates.length - 3; i < sortedUpdates.length; i++) {
+      if (i < 0) continue;
+      
+      const zone = calculateZoneForUpdate(sortedUpdates[i], profile);
+      if (i < sortedUpdates.length - 1 && zone === 'red') {
+        redCount++;
+      }
+      if (i === sortedUpdates.length - 1 && zone === 'green' && redCount >= 2) {
+        return true;
+      }
+    }
+    
+    return false;
   };
 
   useEffect(() => {

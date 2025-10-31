@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getZoneConfig, calculateWeeklyZone } from "@/lib/progressUtils";
+import { getZoneConfig, calculateWeeklyZoneByLimits } from "@/lib/progressUtils";
 import type { WeeklyUpdate, Zone } from "@/lib/progressUtils";
 
 interface WeightProjectionTableProps {
@@ -53,13 +53,15 @@ const WeightProjectionTable = ({
     const isCompleted = !!pesoAtual;
 
     // Calcular zona real se tiver peso atual
+    // USANDO A NOVA FUNÇÃO que compara com os limites da semana específica
     let zone: Zone | null = null;
     if (pesoAtual) {
-      zone = calculateWeeklyZone(
+      zone = calculateWeeklyZoneByLimits(
         pesoAtual,
-        initialWeight,
-        goalType,
-        goalSubtype
+        parseFloat(limInf.toFixed(1)),
+        parseFloat(projetado.toFixed(1)),
+        parseFloat(maxAting.toFixed(1)),
+        goalType
       );
     }
 

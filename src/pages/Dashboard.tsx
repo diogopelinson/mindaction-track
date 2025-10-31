@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
-import { calculateWeeklyZone, getZoneColor, getZoneLabel } from "@/lib/progressUtils";
+import { calculateWeeklyZone, getZoneColor, getZoneLabel, calculateWeeklyZoneByLimits, getZoneConfig } from "@/lib/progressUtils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import StatsCard from "@/components/StatsCard";
 import ProgressRing from "@/components/ProgressRing";
@@ -20,6 +20,8 @@ import { AchievementsDisplay } from "@/components/AchievementsDisplay";
 import { IntermediateGoals } from "@/components/IntermediateGoals";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAchievements } from "@/hooks/useAchievements";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,6 +32,9 @@ const Dashboard = () => {
   const [allUpdates, setAllUpdates] = useState<any[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
   const { checkAndAwardAchievements } = useAchievements();
+  const { width, height } = useWindowSize();
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [greenStreak, setGreenStreak] = useState(0);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -85,6 +90,20 @@ const Dashboard = () => {
           // Check for new achievements
           if (profileData) {
             checkAndAwardAchievements(allData, profileData);
+            
+            // Calcular green streak
+            const streak = calculateGreenStreak(allData, profileData);
+            setGreenStreak(streak);
+            
+            // Mostrar confete se última zona foi verde
+            if (latestData && allData.length > 0) {
+              const lastUpdate = allData[allData.length - 1];
+              const zone = calculateZoneForLatestUpdate(lastUpdate, profileData);
+              if (zone === 'green') {
+                setShowConfetti(true);
+                setTimeout(() => setShowConfetti(false), 5000);
+              }
+            }
           }
         }
 
@@ -144,6 +163,53 @@ const Dashboard = () => {
     return current - initial;
   };
 
+  const calculateZoneForLatestUpdate = (update: any, prof: any) => {
+    if (!prof || !update) return 'red';
+    
+    const config = getZoneConfig(prof.goal_type, prof.goal_subtype || 'padrao');
+    const yellowPercentKg = (prof.initial_weight * config.yellowMin) / 100;
+    const greenMinKg = (prof.initial_weight * config.greenMin) / 100;
+    const greenMaxKg = (prof.initial_weight * config.greenMax) / 100;
+
+    let limInf: number, projetado: number, maxAting: number;
+    
+    if (prof.goal_type === 'ganho_massa') {
+      limInf = prof.initial_weight + (yellowPercentKg * update.week_number);
+      projetado = prof.initial_weight + (greenMinKg * update.week_number);
+      maxAting = prof.initial_weight + (greenMaxKg * update.week_number);
+    } else {
+      limInf = prof.initial_weight - (yellowPercentKg * update.week_number);
+      projetado = prof.initial_weight - (greenMinKg * update.week_number);
+      maxAting = prof.initial_weight - (greenMaxKg * update.week_number);
+    }
+
+    return calculateWeeklyZoneByLimits(
+      update.weight,
+      parseFloat(limInf.toFixed(1)),
+      parseFloat(projetado.toFixed(1)),
+      parseFloat(maxAting.toFixed(1)),
+      prof.goal_type
+    );
+  };
+
+  const calculateGreenStreak = (updates: any[], prof: any): number => {
+    if (updates.length === 0) return 0;
+    
+    const sortedUpdates = [...updates].sort((a, b) => b.week_number - a.week_number);
+    let streak = 0;
+    
+    for (const update of sortedUpdates) {
+      const zone = calculateZoneForLatestUpdate(update, prof);
+      if (zone === 'green') {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -164,6 +230,15 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-background">
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={200}
+          gravity={0.3}
+        />
+      )}
       <div className="max-w-4xl mx-auto p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -245,6 +320,28 @@ const Dashboard = () => {
             description={latestUpdate?.body_fat_percentage ? 'Método Navy' : 'Aguardando medidas'}
           />
         </div>
+
+        {/* Green Streak Indicator */}
+        {greenStreak >= 3 && (
+          <Card className="bg-gradient-to-r from-success/10 to-success/5 border-success/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-success/20 p-3 rounded-full">
+                  <Flame className="h-6 w-6 text-success" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-success text-lg">Streak Verde Ativo! 🔥</p>
+                  <p className="text-sm text-muted-foreground">
+                    {greenStreak} semanas consecutivas na zona ideal
+                  </p>
+                </div>
+                <div className="text-3xl font-bold text-success">
+                  {greenStreak}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Achievements - Show compact version */}
         {allUpdates.length > 0 && (

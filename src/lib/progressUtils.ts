@@ -144,3 +144,30 @@ export const getZoneLabel = (zone: Zone): string => {
       return 'Zona Vermelha';
   }
 };
+
+/**
+ * Calcula a zona baseada nos limites semanais específicos
+ * ESTA É A FUNÇÃO CORRETA para usar na tabela de projeção
+ */
+export const calculateWeeklyZoneByLimits = (
+  currentWeight: number,
+  limInf: number,
+  projetado: number,
+  maxAting: number,
+  goalType: 'perda_peso' | 'ganho_massa'
+): Zone => {
+  if (goalType === 'ganho_massa') {
+    // Para GANHO DE MASSA (peso deve aumentar)
+    if (currentWeight < limInf) return 'red';        // Abaixo do mínimo esperado
+    if (currentWeight >= limInf && currentWeight < projetado) return 'yellow'; // Entre mínimo e ideal
+    if (currentWeight >= projetado && currentWeight <= maxAting) return 'green'; // Na faixa ideal!
+    if (currentWeight > maxAting) return 'red';      // Acima do máximo (ganho excessivo)
+  } else {
+    // Para PERDA DE PESO (peso deve diminuir)
+    if (currentWeight > limInf) return 'red';        // Acima do limite (pouca perda)
+    if (currentWeight > projetado && currentWeight <= limInf) return 'yellow'; // Entre ideal e limite
+    if (currentWeight >= maxAting && currentWeight <= projetado) return 'green'; // Na faixa ideal!
+    if (currentWeight < maxAting) return 'red';      // Abaixo do máximo (perda excessiva)
+  }
+  return 'red'; // Fallback
+};
