@@ -357,12 +357,12 @@ const Dashboard = () => {
                   const previousUpdate = arr[idx + 1];
                   let zone = null;
                   
-                  if (previousUpdate && profile) {
+                  if (profile) {
                     zone = calculateWeeklyZone(
                       update.weight,
-                      previousUpdate.weight,
+                      profile.initial_weight,
                       profile.goal_type,
-                      1 // Default 1% weekly variation
+                      (profile as any).goal_subtype || 'padrao'
                     );
                   }
 

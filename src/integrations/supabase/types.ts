@@ -321,6 +321,7 @@ export type Database = {
           created_at: string
           email: string
           full_name: string
+          goal_subtype: string | null
           goal_type: string | null
           height: number
           id: string
@@ -337,6 +338,7 @@ export type Database = {
           created_at?: string
           email: string
           full_name: string
+          goal_subtype?: string | null
           goal_type?: string | null
           height: number
           id: string
@@ -353,6 +355,7 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string
+          goal_subtype?: string | null
           goal_type?: string | null
           height?: number
           id?: string

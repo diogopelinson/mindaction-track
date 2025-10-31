@@ -269,9 +269,8 @@ const Auth = () => {
           
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-1 mb-6">
                 <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Cadastro</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -306,192 +305,13 @@ const Auth = () => {
                     {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
                 </form>
-              </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="signup-name">Nome Completo</Label>
-                      <Input
-                        id="signup-name"
-                        name="fullName"
-                        type="text"
-                        placeholder="Seu nome"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cpf">CPF</Label>
-                      <Input
-                        id="cpf"
-                        name="cpf"
-                        type="text"
-                        placeholder="000.000.000-00"
-                        value={cpfValue}
-                        onChange={(e) => setCpfValue(formatCPF(e.target.value))}
-                        maxLength={14}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="(00) 00000-0000"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="signup-email">E-mail</Label>
-                      <Input
-                        id="signup-email"
-                        name="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="signup-password">Senha</Label>
-                      <Input
-                        id="signup-password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        minLength={6}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Idade</Label>
-                      <Input
-                        id="age"
-                        name="age"
-                        type="number"
-                        placeholder="25"
-                        min="18"
-                        max="120"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="height">Altura (cm)</Label>
-                      <Input
-                        id="height"
-                        name="height"
-                        type="number"
-                        placeholder="170"
-                        min="100"
-                        max="250"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>Sexo</Label>
-                    <RadioGroup name="sex" defaultValue="male" className="flex gap-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="male" id="male" />
-                        <Label htmlFor="male" className="font-normal cursor-pointer">
-                          Masculino
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="female" id="female" />
-                        <Label htmlFor="female" className="font-normal cursor-pointer">
-                          Feminino
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>Objetivo</Label>
-                    <RadioGroup name="goalType" defaultValue="perda_peso" className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="perda_peso" id="perda_peso" />
-                        <Label htmlFor="perda_peso" className="font-normal cursor-pointer">
-                          <span className="font-semibold">Perda de Peso</span> - Reduzir gordura corporal
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="ganho_massa" id="ganho_massa" />
-                        <Label htmlFor="ganho_massa" className="font-normal cursor-pointer">
-                          <span className="font-semibold">Ganho de Massa</span> - Aumentar massa muscular
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="initial-weight">Peso Atual (kg)</Label>
-                      <Input
-                        id="initial-weight"
-                        name="initialWeight"
-                        type="number"
-                        step="0.1"
-                        placeholder="80.0"
-                        min="30"
-                        max="300"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="target-weight">Peso Meta (kg)</Label>
-                      <Input
-                        id="target-weight"
-                        name="targetWeight"
-                        type="number"
-                        step="0.1"
-                        placeholder="75.0"
-                        min="30"
-                        max="300"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 p-4 bg-muted rounded-md">
-                    <Checkbox 
-                      id="admin-request" 
-                      checked={requestAdminAccess}
-                      onCheckedChange={(checked) => setRequestAdminAccess(checked as boolean)}
-                    />
-                    <Label htmlFor="admin-request" className="text-sm font-normal cursor-pointer">
-                      Quero solicitar acesso como administrador
-                    </Label>
-                  </div>
-
-                  {requestAdminAccess && (
-                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
-                      <p className="text-sm">
-                        Sua solicitação será enviada ao administrador para aprovação. 
-                        Você receberá as permissões de admin assim que sua solicitação for aprovada.
-                      </p>
-                    </div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    className="w-full gradient-bronze shadow-bronze"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Criando conta..." : "Criar Conta"}
-                  </Button>
-                </form>
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-center text-blue-900 dark:text-blue-100">
+                    <strong>Novo por aqui?</strong><br />
+                    Entre em contato com seu coach/administrador para criar sua conta.
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

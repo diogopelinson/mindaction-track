@@ -79,34 +79,30 @@ export const calculateMenteeStatus = (
     attentionReasons.push(`Sem check-in há ${daysDiff} dias`);
   }
 
-  // Calcular zona atual
-  let currentZone: Zone = 'green';
-  if (previousUpdate) {
-    currentZone = calculateWeeklyZone(
-      latestUpdate.weight,
-      previousUpdate.weight,
-      profile.goal_type,
-      profile.goal_type === 'perda_peso' ? 1 : 0.5 // Variação esperada semanal
-    );
-  }
+  // Calcular zona atual usando peso INICIAL
+  let currentZone: Zone = calculateWeeklyZone(
+    latestUpdate.weight,
+    profile.initial_weight,
+    profile.goal_type,
+    (profile as any).goal_subtype || 'padrao'
+  );
 
-  // Verificar últimas 2 semanas em zona vermelha
+  // Verificar últimas 3 semanas para detectar padrões
   if (sortedUpdates.length >= 2) {
-    const recentZones = sortedUpdates.slice(0, 2).map((update, i) => {
-      if (i === sortedUpdates.length - 1) return 'green'; // primeira semana não tem comparação
-      const prev = sortedUpdates[i + 1];
-      return calculateWeeklyZone(
+    const lastThreeUpdates = sortedUpdates.slice(0, 3);
+    const redZones = lastThreeUpdates.filter((update) => {
+      const zone = calculateWeeklyZone(
         update.weight,
-        prev.weight,
+        profile.initial_weight,
         profile.goal_type,
-        profile.goal_type === 'perda_peso' ? 1 : 0.5
+        (profile as any).goal_subtype || 'padrao'
       );
-    });
+      return zone === 'red';
+    }).length;
 
-    const redZoneCount = recentZones.filter(z => z === 'red').length;
-    if (redZoneCount >= 2) {
+    if (redZones >= 2) {
       needsAttention = true;
-      attentionReasons.push('2+ semanas em zona vermelha');
+      attentionReasons.push('2 ou mais semanas em zona vermelha');
     }
   }
 
@@ -142,29 +138,24 @@ export const calculateMenteeStatus = (
 // Calcular zonas de todas as semanas
 export const calculateAllWeeklyZones = (
   updates: WeeklyUpdate[],
-  goal: { goal_type: 'perda_peso' | 'ganho_massa'; weekly_variation_percent?: number }
+  goal: { 
+    goal_type: 'perda_peso' | 'ganho_massa'; 
+    weekly_variation_percent?: number;
+    goal_subtype?: 'padrao' | 'moderada' | 'standard';
+    initial_weight: number;
+  }
 ): WeeklyZoneData[] => {
   if (!updates || updates.length === 0) return [];
 
   const sortedUpdates = [...updates].sort((a, b) => a.week_number - b.week_number);
-  const weeklyVariation = goal.weekly_variation_percent || (goal.goal_type === 'perda_peso' ? 1 : 0.5);
 
-  return sortedUpdates.map((update, index) => {
-    if (index === 0) {
-      return {
-        week: update.week_number,
-        zone: 'green' as Zone,
-        weight: update.weight,
-        date: update.created_at,
-      };
-    }
-
-    const previousUpdate = sortedUpdates[index - 1];
+  return sortedUpdates.map((update) => {
+    // MUDANÇA: Agora sempre usa initial_weight para calcular a zona
     const zone = calculateWeeklyZone(
       update.weight,
-      previousUpdate.weight,
+      goal.initial_weight,
       goal.goal_type,
-      weeklyVariation
+      goal.goal_subtype || 'padrao'
     );
 
     return {

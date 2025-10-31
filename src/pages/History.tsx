@@ -179,9 +179,9 @@ const History = () => {
               if (previousUpdate && profile) {
                 zone = calculateWeeklyZone(
                   parseFloat(update.weight),
-                  parseFloat(previousUpdate.weight),
+                  profile?.initial_weight || 70,
                   profile?.goal_type || 'perda_peso',
-                  1
+                  (profile as any)?.goal_subtype || 'padrao'
                 );
               }
 

@@ -236,6 +236,18 @@ const Admin = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        {/* Quick Action Button */}
+        <div className="mb-6">
+          <Button 
+            onClick={() => navigate('/admin/create-mentee')}
+            size="lg"
+            className="gradient-bronze shadow-bronze"
+          >
+            <Users className="h-5 w-5 mr-2" />
+            Criar Novo Mentorado
+          </Button>
+        </div>
+
         <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as View)} className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="dashboard">

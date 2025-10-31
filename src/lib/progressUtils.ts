@@ -17,36 +17,91 @@ export interface Goal {
   goal_type: 'perda_peso' | 'ganho_massa';
   target_weight: number;
   weekly_variation_percent: number;
+  goal_subtype?: GoalSubtype;
+  initial_weight?: number;
 }
 
 export type Zone = 'green' | 'yellow' | 'red';
 
-export const calculateWeeklyZone = (
-  currentWeight: number,
-  previousWeight: number,
+export type GoalSubtype = 'padrao' | 'moderada' | 'standard';
+
+export interface ZoneConfig {
+  yellowMin: number;  // 0.25
+  greenMin: number;   // 0.35 ou 0.5
+  greenMax: number;   // 0.5 ou 0.75
+}
+
+/**
+ * Retorna a configuração de zonas baseado no tipo de objetivo
+ * Todas as porcentagens são em relação ao PESO INICIAL
+ */
+export const getZoneConfig = (
   goalType: 'perda_peso' | 'ganho_massa',
-  weeklyVariationPercent: number
-): Zone => {
-  const weightChange = currentWeight - previousWeight;
-  const expectedChange = (previousWeight * weeklyVariationPercent) / 100;
+  subtype: GoalSubtype = 'padrao'
+): ZoneConfig => {
+  if (goalType === 'ganho_massa') {
+    // Ganho de Massa: 0,25% | 0,35% | 0,50%
+    return { yellowMin: 0.25, greenMin: 0.35, greenMax: 0.50 };
+  }
   
   if (goalType === 'perda_peso') {
-    // For weight loss, negative change is good
-    if (weightChange <= expectedChange * 0.8) {
-      return 'green'; // Lost more or equal than expected
-    } else if (weightChange <= expectedChange * 1.2) {
-      return 'yellow'; // Slight deviation
+    if (subtype === 'moderada') {
+      // Perda de Peso MODERADA: 0,25% | 0,35% | 0,50%
+      return { yellowMin: 0.25, greenMin: 0.35, greenMax: 0.50 };
+    }
+    // Perda de Peso PADRÃO: 0,25% | 0,50% | 0,75%
+    return { yellowMin: 0.25, greenMin: 0.50, greenMax: 0.75 };
+  }
+  
+  // Fallback para padrão
+  return { yellowMin: 0.25, greenMin: 0.50, greenMax: 0.75 };
+};
+
+/**
+ * Calcula a zona semanal baseada no peso INICIAL (não no peso anterior)
+ * MUDANÇA CRÍTICA: Agora usa initialWeight ao invés de previousWeight
+ */
+export const calculateWeeklyZone = (
+  currentWeight: number,
+  initialWeight: number,
+  goalType: 'perda_peso' | 'ganho_massa',
+  subtype: GoalSubtype = 'padrao'
+): Zone => {
+  const config = getZoneConfig(goalType, subtype);
+  
+  // Calcular variação em relação ao peso INICIAL
+  const weightChange = currentWeight - initialWeight;
+  const changePercent = Math.abs((weightChange / initialWeight) * 100);
+  
+  if (goalType === 'perda_peso') {
+    // Para perda de peso, weight change negativo é bom
+    if (weightChange >= 0) {
+      // Ganhou peso = Zona Vermelha
+      return 'red';
+    }
+    
+    // Verificar limites (em valor absoluto da mudança)
+    if (changePercent >= config.greenMin && changePercent <= config.greenMax) {
+      return 'green'; // Perda ideal
+    } else if (changePercent >= config.yellowMin && changePercent < config.greenMin) {
+      return 'yellow'; // Perda menor que ideal
     } else {
-      return 'red'; // Gained weight or lost too little
+      return 'red'; // Muito pouco ou muito peso perdido
     }
   } else {
-    // For muscle gain, positive change is good
-    if (weightChange >= expectedChange * 0.8) {
-      return 'green'; // Gained as expected
-    } else if (weightChange >= expectedChange * 0.6) {
-      return 'yellow'; // Slight deviation
+    // Para ganho de massa, weight change positivo é bom
+    if (weightChange <= 0) {
+      // Perdeu peso = Zona Vermelha
+      return 'red';
+    }
+    
+    // Verificar limites
+    if (changePercent >= config.greenMin && changePercent <= config.greenMax) {
+      return 'green'; // Ganho ideal
+    } else if (changePercent >= config.yellowMin && changePercent < config.greenMin) {
+      return 'yellow'; // Ganho menor que ideal
     } else {
-      return 'red'; // Gained too little or lost weight
+      return 'red'; // Muito pouco ou muito peso ganho
     }
   }
 };

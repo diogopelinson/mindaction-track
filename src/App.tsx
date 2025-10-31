@@ -11,6 +11,7 @@ import History from "./pages/History";
 import Help from "./pages/Help";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import CreateMentee from "./pages/admin/CreateMentee";
 import AICoach from "./pages/AICoach";
 import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
@@ -66,10 +67,15 @@ const App = () => (
             </ProtectedRoute>
           } />
           
-          {/* Admin-only route */}
+          {/* Admin-only routes */}
           <Route path="/admin" element={
             <ProtectedRoute requireRole="admin">
               <Admin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/create-mentee" element={
+            <ProtectedRoute requireRole="admin">
+              <CreateMentee />
             </ProtectedRoute>
           } />
           

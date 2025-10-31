@@ -45,7 +45,8 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
 
   const zones = calculateAllWeeklyZones(updates, {
     goal_type: mentee.goal_type,
-    weekly_variation_percent: mentee.goal_type === 'perda_peso' ? 1 : 0.5,
+    goal_subtype: (mentee as any).goal_subtype || 'padrao',
+    initial_weight: mentee.initial_weight,
   });
 
   const chartData = sortedUpdates.map((update) => ({
