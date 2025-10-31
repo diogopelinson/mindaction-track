@@ -14,6 +14,8 @@ import Admin from "./pages/Admin";
 import CreateMentee from "./pages/admin/CreateMentee";
 import AICoach from "./pages/AICoach";
 import Calendar from "./pages/Calendar";
+import MapaMindFitness from "./pages/MapaMindFitness";
+import MenteeProjection from "./pages/admin/MenteeProjection";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -66,6 +68,11 @@ const App = () => (
               <Calendar />
             </ProtectedRoute>
           } />
+          <Route path="/mapa-mind-fitness" element={
+            <ProtectedRoute requireRole="mentee">
+              <MapaMindFitness />
+            </ProtectedRoute>
+          } />
           
           {/* Admin-only routes */}
           <Route path="/admin" element={
@@ -76,6 +83,11 @@ const App = () => (
           <Route path="/admin/create-mentee" element={
             <ProtectedRoute requireRole="admin">
               <CreateMentee />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/mentee-projection/:menteeId?" element={
+            <ProtectedRoute requireRole="admin">
+              <MenteeProjection />
             </ProtectedRoute>
           } />
           

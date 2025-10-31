@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, LayoutDashboard, Users, UserCheck } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, UserCheck, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logo from "@/assets/logo.png";
 import AdminStats from "@/components/admin/AdminStats";
@@ -236,8 +236,8 @@ const Admin = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        {/* Quick Action Button */}
-        <div className="mb-6">
+        {/* Quick Action Buttons */}
+        <div className="mb-6 flex gap-4 flex-wrap">
           <Button 
             onClick={() => navigate('/admin/create-mentee')}
             size="lg"
@@ -245,6 +245,14 @@ const Admin = () => {
           >
             <Users className="h-5 w-5 mr-2" />
             Criar Novo Mentorado
+          </Button>
+          <Button 
+            onClick={() => navigate('/admin/mentee-projection')}
+            size="lg"
+            variant="outline"
+          >
+            <TrendingUp className="h-5 w-5 mr-2" />
+            Ver Mapa Mind Fitness
           </Button>
         </div>
 
