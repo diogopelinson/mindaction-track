@@ -6,9 +6,10 @@ interface ZoneExplainerProps {
   goalType: 'perda_peso' | 'ganho_massa';
   goalSubtype: GoalSubtype;
   initialWeight: number;
+  targetWeight?: number;
 }
 
-const ZoneExplainer = ({ goalType, goalSubtype, initialWeight }: ZoneExplainerProps) => {
+const ZoneExplainer = ({ goalType, goalSubtype, initialWeight, targetWeight }: ZoneExplainerProps) => {
   const config = getZoneConfig(goalType, goalSubtype);
   
   const yellowPercentRange = `${config.yellowMin}% - ${config.greenMin}%`;
@@ -48,6 +49,11 @@ const ZoneExplainer = ({ goalType, goalSubtype, initialWeight }: ZoneExplainerPr
         </div>
         <CardDescription>
           Objetivo: <strong>{getGoalTypeName()}</strong> • Peso Inicial: <strong>{initialWeight.toFixed(1)} kg</strong>
+          {targetWeight && (
+            <span className="block mt-1 text-primary">
+              Peso meta calculado automaticamente: <strong>{targetWeight.toFixed(1)} kg</strong>
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

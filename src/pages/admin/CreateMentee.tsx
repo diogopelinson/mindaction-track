@@ -20,6 +20,15 @@ const CreateMentee = () => {
   const [goalType, setGoalType] = useState("perda_peso_padrao");
   const [initialWeight, setInitialWeight] = useState<number>(70);
 
+  // Calcular peso meta automaticamente baseado no objetivo
+  const calculateTargetWeight = (initial: number, goal: string): number => {
+    if (goal === 'ganho_massa') return initial * 1.10; // +10%
+    if (goal === 'perda_peso_moderada') return initial * 0.95; // -5%
+    return initial * 0.90; // -10% (perda_peso_padrao)
+  };
+
+  const targetWeight = calculateTargetWeight(initialWeight, goalType);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -34,7 +43,7 @@ const CreateMentee = () => {
     const age = parseInt(formData.get('age') as string);
     const height = parseFloat(formData.get('height') as string);
     const initialWeightValue = parseFloat(formData.get('initialWeight') as string);
-    const targetWeight = parseFloat(formData.get('targetWeight') as string);
+    const targetWeightValue = calculateTargetWeight(initialWeightValue, goalType);
 
     // Validate CPF
     if (!validateCPF(cpf)) {
@@ -76,7 +85,7 @@ const CreateMentee = () => {
           age,
           height,
           initial_weight: initialWeightValue,
-          target_weight: targetWeight,
+          target_weight: targetWeightValue,
           goal_type: goalTypeValue,
           goal_subtype: goalSubtype,
         }
@@ -277,20 +286,6 @@ const CreateMentee = () => {
                     required
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="targetWeight">Peso Meta (kg) *</Label>
-                  <Input
-                    id="targetWeight"
-                    name="targetWeight"
-                    type="number"
-                    step="0.1"
-                    placeholder="65.0"
-                    min="30"
-                    max="300"
-                    required
-                  />
-                </div>
               </div>
 
               {initialWeight > 0 && (
@@ -298,6 +293,7 @@ const CreateMentee = () => {
                   goalType={getGoalTypeForExplainer()}
                   goalSubtype={getGoalSubtypeForExplainer()}
                   initialWeight={initialWeight}
+                  targetWeight={targetWeight}
                 />
               )}
             </CardContent>
