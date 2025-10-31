@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { calculateWeeklyZone } from "@/lib/progressUtils";
+import { calculateWeeklyZone, getZoneConfig, calculateWeeklyZoneByLimits } from "@/lib/progressUtils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import logo from "@/assets/logo.png";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -177,12 +177,30 @@ const History = () => {
               const previousUpdate = updates[updates.indexOf(update) - 1];
               let zone = null;
               
-              if (previousUpdate && profile) {
-                zone = calculateWeeklyZone(
+              if (profile) {
+                const config = getZoneConfig(profile.goal_type as 'perda_peso' | 'ganho_massa', (profile as any).goal_subtype || 'padrao');
+                const yellowPercentKg = (profile.initial_weight * config.yellowMin) / 100;
+                const greenMinKg = (profile.initial_weight * config.greenMin) / 100;
+                const greenMaxKg = (profile.initial_weight * config.greenMax) / 100;
+
+                let limInf: number, projetado: number, maxAting: number;
+
+                if (profile.goal_type === 'ganho_massa') {
+                  limInf = profile.initial_weight + (yellowPercentKg * update.week_number);
+                  projetado = profile.initial_weight + (greenMinKg * update.week_number);
+                  maxAting = profile.initial_weight + (greenMaxKg * update.week_number);
+                } else {
+                  limInf = profile.initial_weight - (yellowPercentKg * update.week_number);
+                  projetado = profile.initial_weight - (greenMinKg * update.week_number);
+                  maxAting = profile.initial_weight - (greenMaxKg * update.week_number);
+                }
+
+                zone = calculateWeeklyZoneByLimits(
                   parseFloat(update.weight),
-                  profile?.initial_weight || 70,
-                  profile?.goal_type || 'perda_peso',
-                  (profile as any)?.goal_subtype || 'padrao'
+                  parseFloat(limInf.toFixed(1)),
+                  parseFloat(projetado.toFixed(1)),
+                  parseFloat(maxAting.toFixed(1)),
+                  profile.goal_type as 'perda_peso' | 'ganho_massa'
                 );
               }
 

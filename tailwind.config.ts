@@ -121,6 +121,14 @@ export default {
             transform: "scale(1)",
           },
         },
+        "shimmer": {
+          "0%": { transform: "translateX(-100%) rotate(45deg)" },
+          "100%": { transform: "translateX(200%) rotate(45deg)" },
+        },
+        "bounce-subtle": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -128,6 +136,8 @@ export default {
         "float": "float 3s ease-in-out infinite",
         "fade-in-up": "fade-in-up 0.6s ease-out",
         "scale-in": "scale-in 0.4s ease-out",
+        "shimmer": "shimmer 3s ease-in-out infinite",
+        "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
       },
     },
   },

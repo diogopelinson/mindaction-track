@@ -455,11 +455,29 @@ const Dashboard = () => {
                   let zone = null;
                   
                   if (profile) {
-                    zone = calculateWeeklyZone(
+                    const config = getZoneConfig(profile.goal_type, (profile as any).goal_subtype || 'padrao');
+                    const yellowPercentKg = (profile.initial_weight * config.yellowMin) / 100;
+                    const greenMinKg = (profile.initial_weight * config.greenMin) / 100;
+                    const greenMaxKg = (profile.initial_weight * config.greenMax) / 100;
+
+                    let limInf: number, projetado: number, maxAting: number;
+
+                    if (profile.goal_type === 'ganho_massa') {
+                      limInf = profile.initial_weight + (yellowPercentKg * update.week_number);
+                      projetado = profile.initial_weight + (greenMinKg * update.week_number);
+                      maxAting = profile.initial_weight + (greenMaxKg * update.week_number);
+                    } else {
+                      limInf = profile.initial_weight - (yellowPercentKg * update.week_number);
+                      projetado = profile.initial_weight - (greenMinKg * update.week_number);
+                      maxAting = profile.initial_weight - (greenMaxKg * update.week_number);
+                    }
+
+                    zone = calculateWeeklyZoneByLimits(
                       update.weight,
-                      profile.initial_weight,
-                      profile.goal_type,
-                      (profile as any).goal_subtype || 'padrao'
+                      parseFloat(limInf.toFixed(1)),
+                      parseFloat(projetado.toFixed(1)),
+                      parseFloat(maxAting.toFixed(1)),
+                      profile.goal_type
                     );
                   }
 

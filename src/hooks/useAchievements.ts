@@ -113,6 +113,7 @@ export const BADGE_INFO = {
 export const useAchievements = () => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shownNotifications, setShownNotifications] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const fetchAchievements = async () => {
@@ -230,13 +231,17 @@ export const useAchievements = () => {
         .from('achievements')
         .insert({ user_id: user.id, badge_type: badgeType });
 
-      if (!error) {
+      // Apenas mostrar toast se não foi mostrado ainda nesta sessão
+      if (!error && !shownNotifications.has(badgeType)) {
         const badgeInfo = BADGE_INFO[badgeType as keyof typeof BADGE_INFO];
         toast({
           title: `🎉 Nova Conquista Desbloqueada!`,
           description: `${badgeInfo.icon} ${badgeInfo.name}: ${badgeInfo.description}`,
           duration: 5000,
         });
+        
+        // Marcar como mostrado
+        setShownNotifications(prev => new Set([...prev, badgeType]));
       }
     }
 
@@ -355,6 +360,30 @@ export const useAchievements = () => {
   useEffect(() => {
     fetchAchievements();
   }, []);
+
+  // Mostrar toasts apenas para conquistas recentes (últimos 10 segundos)
+  useEffect(() => {
+    if (achievements.length === 0) return;
+    
+    const recentAchievements = achievements.filter(a => {
+      const earnedAt = new Date(a.earned_at);
+      const now = new Date();
+      const diffSeconds = (now.getTime() - earnedAt.getTime()) / 1000;
+      return diffSeconds < 10;
+    });
+
+    for (const achievement of recentAchievements) {
+      if (!shownNotifications.has(achievement.badge_type)) {
+        const badgeInfo = BADGE_INFO[achievement.badge_type as keyof typeof BADGE_INFO];
+        toast({
+          title: `🎉 Conquista Desbloqueada!`,
+          description: `${badgeInfo.icon} ${badgeInfo.name}`,
+          duration: 5000,
+        });
+        setShownNotifications(prev => new Set([...prev, achievement.badge_type]));
+      }
+    }
+  }, [achievements]);
 
   return {
     achievements,

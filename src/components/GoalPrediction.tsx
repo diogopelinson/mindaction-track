@@ -24,8 +24,15 @@ const GoalPrediction = ({ profile, updates }: GoalPredictionProps) => {
   const targetWeight = profile.target_weight;
   const remainingWeight = Math.abs(targetWeight - currentWeight);
 
-  // Estimate weeks to goal
-  const weeksToGoal = Math.ceil(remainingWeight / Math.abs(avgWeeklyChange));
+  // Mapa Mind Fitness tem 24 semanas totais
+  const TOTAL_WEEKS = 24;
+  const currentWeek = updates.length;
+  const weeksToGoal = Math.max(0, TOTAL_WEEKS - currentWeek);
+  
+  // Verificar se está no ritmo adequado
+  const velocityBasedWeeks = Math.ceil(remainingWeight / Math.abs(avgWeeklyChange));
+  const isSlowPace = velocityBasedWeeks > weeksToGoal && weeksToGoal > 0;
+  
   const estimatedDate = new Date();
   estimatedDate.setDate(estimatedDate.getDate() + weeksToGoal * 7);
 
@@ -39,14 +46,21 @@ const GoalPrediction = ({ profile, updates }: GoalPredictionProps) => {
   return (
     <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
       <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="bg-accent/10 p-3 rounded-full">
-            <Target className="h-6 w-6 text-accent" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-accent/10 p-3 rounded-full">
+              <Target className="h-6 w-6 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="font-bebas text-2xl">Previsão de Meta</CardTitle>
+              <CardDescription>Mapa Mind Fitness (24 semanas)</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="font-bebas text-2xl">Previsão de Meta</CardTitle>
-            <CardDescription>Baseado na sua evolução</CardDescription>
-          </div>
+          {isSlowPace && (
+            <Badge variant="outline" className="bg-warning/10 text-warning border-warning">
+              ⚠️ Ajustar ritmo
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent>
