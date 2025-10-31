@@ -10,6 +10,7 @@ import logo from "@/assets/logo.png";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X, ArrowLeft } from "lucide-react";
 import AIPhotoComparison from "@/components/AIPhotoComparison";
+import { SecureImage } from "@/components/SecureImage";
 
 const History = () => {
   const navigate = useNavigate();
@@ -185,6 +186,7 @@ const History = () => {
                 );
               }
 
+              // Processar URLs de fotos e extrair paths limpos
               const photoUrls = update.photo_url 
                 ? (typeof update.photo_url === 'string' 
                     ? update.photo_url.split(',').filter(url => url.trim()) 
@@ -192,6 +194,14 @@ const History = () => {
                       ? update.photo_url 
                       : [])
                 : [];
+
+              // Extrair paths limpos (remover domínio e prefixo do storage)
+              const photoPaths = photoUrls.map(url => {
+                if (!url) return '';
+                // Remove todas as partes da URL e mantém apenas user_id/filename
+                const match = url.match(/([a-f0-9-]+\/[^?]+)/);
+                return match ? match[1] : url;
+              }).filter(path => path);
 
               return (
                 <Card key={update.id} className="shadow-card hover:shadow-bronze transition-all duration-300">
@@ -264,31 +274,35 @@ const History = () => {
                     </div>
 
                     {/* Photos */}
-                    {photoUrls.length > 0 && (
+                    {photoPaths.length > 0 && (
                       <div>
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="font-semibold text-lg">Fotos do Progresso</h3>
                           <AIPhotoComparison update={update} />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {photoUrls.map((url, index) => (
+                          {photoPaths.map((path, index) => (
                             <div 
                               key={index} 
                               className="relative group cursor-pointer overflow-hidden rounded-lg border-2 border-border hover:border-primary transition-all duration-300"
-                              onClick={() => setSelectedImage(url)}
+                              onClick={() => setSelectedImage(photoUrls[index])}
                             >
-                              <img
-                                src={url}
-                                alt={`Progresso semana ${update.week_number} - ${getPhotoLabel(url, index)}`}
+                              <SecureImage
+                                bucket="weekly-photos"
+                                path={path}
+                                alt={`Progresso semana ${update.week_number} - ${getPhotoLabel(photoUrls[index], index)}`}
                                 className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
-                                loading="lazy"
-                                onError={(e) => {
-                                  e.currentTarget.src = logo;
-                                }}
+                                fallback={
+                                  <img
+                                    src={logo}
+                                    alt="Imagem indisponível"
+                                    className="w-full h-64 object-cover"
+                                  />
+                                }
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                                  <p className="text-white font-semibold">{getPhotoLabel(url, index)}</p>
+                                  <p className="text-white font-semibold">{getPhotoLabel(photoUrls[index], index)}</p>
                                   <p className="text-white/80 text-sm">Clique para ampliar</p>
                                 </div>
                               </div>

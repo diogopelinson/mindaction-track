@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getZoneConfig } from "@/lib/progressUtils";
-import type { WeeklyUpdate } from "@/lib/progressUtils";
+import { Badge } from "@/components/ui/badge";
+import { getZoneConfig, calculateWeeklyZone } from "@/lib/progressUtils";
+import type { WeeklyUpdate, Zone } from "@/lib/progressUtils";
 
 interface WeightProjectionTableProps {
   initialWeight: number;
@@ -51,6 +52,17 @@ const WeightProjectionTable = ({
     // Determinar se a semana já passou (tem check-in)
     const isCompleted = !!pesoAtual;
 
+    // Calcular zona real se tiver peso atual
+    let zone: Zone | null = null;
+    if (pesoAtual) {
+      zone = calculateWeeklyZone(
+        pesoAtual,
+        initialWeight,
+        goalType,
+        goalSubtype
+      );
+    }
+
     return {
       weekNumber,
       limInf: limInf.toFixed(1),
@@ -58,8 +70,30 @@ const WeightProjectionTable = ({
       maxAting: maxAting.toFixed(1),
       pesoAtual: pesoAtual?.toFixed(1),
       isCompleted,
+      zone,
     };
   });
+
+  // Função para determinar cor da linha baseada na zona
+  const getRowColor = (zone: Zone | null, isCompleted: boolean) => {
+    if (!isCompleted) return 'bg-muted/50'; // Futuro
+    if (!zone) return 'bg-muted/50'; // Sem dados
+    
+    switch (zone) {
+      case 'green': return 'bg-success/20 border-l-4 border-success';
+      case 'yellow': return 'bg-warning/20 border-l-4 border-warning';
+      case 'red': return 'bg-danger/20 border-l-4 border-danger';
+    }
+  };
+
+  // Função para obter label da zona
+  const getZoneLabel = (zone: Zone) => {
+    switch (zone) {
+      case 'green': return 'Verde';
+      case 'yellow': return 'Amarela';
+      case 'red': return 'Vermelha';
+    }
+  };
 
   return (
     <Card>
@@ -91,7 +125,7 @@ const WeightProjectionTable = ({
               {weeks.map((week) => (
                 <TableRow 
                   key={week.weekNumber}
-                  className={week.isCompleted ? 'bg-success/10' : 'bg-muted/50'}
+                  className={getRowColor(week.zone, week.isCompleted)}
                 >
                   <TableCell className="text-center font-medium">
                     {week.weekNumber}
@@ -101,7 +135,23 @@ const WeightProjectionTable = ({
                   <TableCell className="text-center">{week.maxAting}</TableCell>
                   <TableCell className="text-center">
                     {week.pesoAtual ? (
-                      <span className="font-bold text-success">{week.pesoAtual} kg</span>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="font-bold">{week.pesoAtual} kg</span>
+                        {week.zone && (
+                          <Badge 
+                            variant="outline"
+                            className={`text-xs ${
+                              week.zone === 'green' 
+                                ? 'bg-success text-success-foreground border-success' 
+                                : week.zone === 'yellow'
+                                ? 'bg-warning text-warning-foreground border-warning'
+                                : 'bg-danger text-danger-foreground border-danger'
+                            }`}
+                          >
+                            {getZoneLabel(week.zone)}
+                          </Badge>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
@@ -113,7 +163,10 @@ const WeightProjectionTable = ({
         </div>
         
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-          <p><span className="inline-block w-4 h-4 bg-success/10 border border-success/20 rounded mr-2"></span>Semanas com check-in realizado</p>
+          <p className="font-semibold text-foreground mb-2">Legenda de Zonas:</p>
+          <p><span className="inline-block w-4 h-4 bg-success/20 border-l-4 border-success rounded mr-2"></span>Zona Verde - Progresso ideal</p>
+          <p><span className="inline-block w-4 h-4 bg-warning/20 border-l-4 border-warning rounded mr-2"></span>Zona Amarela - Atenção necessária</p>
+          <p><span className="inline-block w-4 h-4 bg-danger/20 border-l-4 border-danger rounded mr-2"></span>Zona Vermelha - Fora do objetivo</p>
           <p><span className="inline-block w-4 h-4 bg-muted/50 border border-border rounded mr-2"></span>Semanas futuras (projeção)</p>
           <p className="mt-4 font-medium text-foreground">
             • <strong>Lim Inf:</strong> Limite inferior (zona amarela)<br/>
