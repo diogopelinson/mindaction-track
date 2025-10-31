@@ -72,12 +72,11 @@ const CreateMentee = () => {
         goalSubtype = 'padrao';
       }
 
-      // Create user via admin API
-      const { data, error } = await supabase.auth.admin.createUser({
-        email,
-        password: temporaryPassword,
-        email_confirm: true,
-        user_metadata: {
+      // Chamar edge function para criar mentorado
+      const { data, error: invokeError } = await supabase.functions.invoke('create-mentee', {
+        body: {
+          email,
+          password: temporaryPassword,
           full_name: fullName,
           cpf,
           phone,
@@ -91,14 +90,11 @@ const CreateMentee = () => {
         }
       });
 
-      if (error) throw error;
+      if (invokeError) throw invokeError;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.user) throw new Error('Failed to create user');
 
       if (data.user) {
-        // Update profile with goal_subtype
-        await supabase
-          .from('profiles')
-          .update({ goal_subtype: goalSubtype })
-          .eq('id', data.user.id);
 
         toast({
           title: "Mentorado criado com sucesso!",

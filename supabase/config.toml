@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.fitness-chat]
 verify_jwt = true
+
+[functions.create-mentee]
+verify_jwt = true
