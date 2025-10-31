@@ -108,6 +108,11 @@ export const BADGE_INFO = {
     description: '12 semanas na zona verde',
     icon: '💎',
   },
+  precision_5: {
+    name: 'Precisão Cirúrgica',
+    description: '5 check-ins no peso projetado (±0.1kg)',
+    icon: '🎯',
+  },
 };
 
 export const useAchievements = () => {

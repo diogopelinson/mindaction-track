@@ -29,7 +29,17 @@ const CATEGORY_INFO = {
 export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProps) => {
   const { achievements, loading } = useAchievements();
 
-  const earnedBadges = achievements.map(a => a.badge_type);
+  // Filtrar apenas badges válidas e remover duplicatas
+  const validAchievements = achievements.filter(a => 
+    BADGE_INFO[a.badge_type as keyof typeof BADGE_INFO]
+  );
+  
+  // Remover duplicatas mantendo apenas a primeira ocorrência de cada badge_type
+  const uniqueAchievements = validAchievements.filter((achievement, index, self) =>
+    index === self.findIndex(a => a.badge_type === achievement.badge_type)
+  );
+  
+  const earnedBadges = uniqueAchievements.map(a => a.badge_type);
   const allBadges = Object.keys(BADGE_INFO);
 
   if (loading) {
@@ -51,7 +61,7 @@ export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProp
   }
 
   const displayBadges = compact ? allBadges.slice(0, 3) : allBadges;
-  const progressPercent = Math.round((achievements.length / allBadges.length) * 100);
+  const progressPercent = Math.round((earnedBadges.length / allBadges.length) * 100);
 
   const renderBadge = (badgeType: string) => {
     const badge = BADGE_INFO[badgeType as keyof typeof BADGE_INFO];
@@ -105,25 +115,35 @@ export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProp
 
   if (compact) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg">
                 <Trophy className="h-5 w-5 text-primary" />
-                Conquistas
-              </CardTitle>
-              <CardDescription>
-                {achievements.length} de {allBadges.length} desbloqueadas
-              </CardDescription>
+              </div>
+              <div>
+                <CardTitle className="text-lg">Conquistas</CardTitle>
+                <CardDescription className="text-xs">
+                  Continue progredindo!
+                </CardDescription>
+              </div>
             </div>
-            <Badge variant="secondary" className="text-lg font-bold">
-              {achievements.length}/{allBadges.length}
-            </Badge>
+            <div className="flex flex-col items-end gap-1">
+              <Badge variant="secondary" className="text-base font-bold px-3 py-1">
+                {earnedBadges.length}/{allBadges.length}
+              </Badge>
+              <span className="text-xs font-medium text-primary">
+                {progressPercent}%
+              </span>
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <CardContent className="pt-0">
+          <div className="mb-3">
+            <Progress value={progressPercent} className="h-2" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
             {displayBadges.map(renderBadge)}
           </div>
         </CardContent>
@@ -132,21 +152,30 @@ export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProp
   }
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+    <Card className="overflow-hidden border-2">
+      <CardHeader className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <Trophy className="h-6 w-6 text-primary" />
-              Conquistas
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2 bg-gradient-to-br from-primary/30 to-accent/30 rounded-xl">
+                <Trophy className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <span className="block">Conquistas</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {earnedBadges.length} de {allBadges.length} desbloqueadas
+                </span>
+              </div>
             </CardTitle>
-            <CardDescription className="mt-1">
-              Continue progredindo para desbloquear mais badges
-            </CardDescription>
           </div>
-          <Badge variant="default" className="text-lg px-4 py-2 font-bold">
-            {achievements.length}/{allBadges.length}
-          </Badge>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant="default" className="text-xl px-5 py-2 font-bold shadow-lg">
+              {earnedBadges.length}/{allBadges.length}
+            </Badge>
+            <span className="text-sm font-medium text-primary">
+              {progressPercent}% completo
+            </span>
+          </div>
         </div>
         
         <div>
