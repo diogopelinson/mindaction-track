@@ -29,11 +29,24 @@ const AIPhotoComparison = ({ update }: AIPhotoComparisonProps) => {
   const comparePhotos = async () => {
     setIsLoading(true);
     try {
+      // Extrair apenas os paths das fotos (sem URLs assinadas)
+      const photoPaths = photoUrls.map((url: string) => {
+        // Remover a assinatura se houver
+        const path = url.match(/([a-f0-9-]+\/[^?]+)/)?.[1] || url;
+        return path;
+      });
+
+      console.log('Enviando para análise:', { photoPaths, weekNumber: update.week_number });
+
       const { data, error } = await supabase.functions.invoke('compare-photos', {
-        body: { photoUrls, weekNumber: update.week_number }
+        body: { photoPaths, weekNumber: update.week_number }
       });
 
       if (error) throw error;
+
+      if (!data || !data.analysis) {
+        throw new Error('Resposta inválida da IA');
+      }
 
       setAnalysis(data.analysis);
       toast({
