@@ -4,6 +4,13 @@ import { useToast } from '@/hooks/use-toast';
 import { calculateWeeklyZoneByLimits, getZoneConfig } from '@/lib/progressUtils';
 import type { Zone } from '@/lib/progressUtils';
 
+// Badge unlock notification state
+let badgeUnlockCallback: ((badgeType: string) => void) | null = null;
+
+export const setBadgeUnlockCallback = (callback: (badgeType: string) => void) => {
+  badgeUnlockCallback = callback;
+};
+
 export interface Achievement {
   id: string;
   badge_type: string;
@@ -300,12 +307,10 @@ export const useAchievements = () => {
 
       // Apenas mostrar toast se não foi mostrado ainda nesta sessão
       if (!error && !shownNotifications.has(badgeType)) {
-        const badgeInfo = BADGE_INFO[badgeType as keyof typeof BADGE_INFO];
-        toast({
-          title: `🎉 Nova Conquista Desbloqueada!`,
-          description: `${badgeInfo.icon} ${badgeInfo.name}: ${badgeInfo.description}`,
-          duration: 5000,
-        });
+        // Trigger badge unlock modal
+        if (badgeUnlockCallback) {
+          badgeUnlockCallback(badgeType);
+        }
         
         // Marcar como mostrado
         setShownNotifications(prev => new Set([...prev, badgeType]));

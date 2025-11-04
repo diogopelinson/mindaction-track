@@ -25,9 +25,14 @@ export function GamificationStats({ checkInCount, greenStreak, totalXP }: Gamifi
     );
   }
 
-  const achievementCount = achievements.length;
+  // Remove duplicates from achievements
+  const uniqueAchievements = achievements.filter((achievement, index, self) =>
+    index === self.findIndex(a => a.badge_type === achievement.badge_type)
+  );
+  
+  const achievementCount = uniqueAchievements.length;
   const totalAchievements = 19;
-  const successRate = checkInCount > 0 ? Math.round((greenStreak / checkInCount) * 100) : 0;
+  const successRate = checkInCount > 0 ? Math.min(Math.round((greenStreak / checkInCount) * 100), 100) : 0;
 
   return (
     <Card className="border-primary/20">

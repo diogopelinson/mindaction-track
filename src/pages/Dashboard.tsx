@@ -18,13 +18,15 @@ import GoalPrediction from "@/components/GoalPrediction";
 import PatternDetection from "@/components/PatternDetection";
 import { IntermediateGoals } from "@/components/IntermediateGoals";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAchievements } from "@/hooks/useAchievements";
+import { useAchievements, setBadgeUnlockCallback } from "@/hooks/useAchievements";
 import { useXPSystem } from "@/hooks/useXPSystem";
 import { XPCard } from "@/components/XPCard";
 import { LevelUpModal } from "@/components/LevelUpModal";
 import { XPCounter } from "@/components/XPCounter";
+import { BadgeUnlockModal } from "@/components/BadgeUnlockModal";
 import { WeeklyChallenges } from "@/components/WeeklyChallenges";
 import { GamificationStats } from "@/components/GamificationStats";
+import { RewardsPanel } from "@/components/RewardsPanel";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 
@@ -41,6 +43,14 @@ const Dashboard = () => {
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
   const [greenStreak, setGreenStreak] = useState(0);
+  const [unlockedBadge, setUnlockedBadge] = useState<string | null>(null);
+
+  // Set up badge unlock callback
+  useEffect(() => {
+    setBadgeUnlockCallback((badgeType: string) => {
+      setUnlockedBadge(badgeType);
+    });
+  }, []);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -375,6 +385,16 @@ const Dashboard = () => {
           />
         )}
 
+        {/* Rewards Panel */}
+        {allUpdates.length > 0 && userXP && (
+          <RewardsPanel
+            currentLevel={userXP.current_level}
+            xpToNextLevel={getXPInCurrentLevel()}
+            checkInCount={checkInCount}
+            greenStreak={greenStreak}
+          />
+        )}
+
         {/* Intermediate Goals */}
         {allUpdates.length > 0 && (
           <IntermediateGoals />
@@ -593,6 +613,15 @@ const Dashboard = () => {
           open={showLevelUp}
           onClose={() => setShowLevelUp(false)}
           level={userXP.current_level}
+        />
+      )}
+
+      {/* Badge Unlock Modal */}
+      {unlockedBadge && (
+        <BadgeUnlockModal
+          open={!!unlockedBadge}
+          onClose={() => setUnlockedBadge(null)}
+          badgeType={unlockedBadge}
         />
       )}
 
