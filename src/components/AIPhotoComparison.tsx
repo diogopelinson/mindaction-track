@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SecureImage } from "@/components/SecureImage";
 
 interface AIPhotoComparisonProps {
   update: any;
@@ -67,14 +68,24 @@ const AIPhotoComparison = ({ update }: AIPhotoComparisonProps) => {
         <div className="space-y-6">
           {/* Photos Grid */}
           <div className="grid grid-cols-3 gap-4">
-            {photoUrls.map((url: string, idx: number) => (
-              <img
-                key={idx}
-                src={url}
-                alt={`Foto ${idx + 1}`}
-                className="w-full h-48 object-cover rounded-lg border border-border"
-              />
-            ))}
+            {photoUrls.map((url: string, idx: number) => {
+              // Extrair o path do storage (remover assinatura se houver)
+              const path = url.match(/([a-f0-9-]+\/[^?]+)/)?.[1] || url;
+              return (
+                <SecureImage
+                  key={idx}
+                  bucket="weekly-photos"
+                  path={path}
+                  alt={`Foto ${idx + 1}`}
+                  className="w-full h-48 object-cover rounded-lg border border-border"
+                  fallback={
+                    <div className="w-full h-48 flex items-center justify-center bg-muted rounded-lg border border-border">
+                      <span className="text-muted-foreground">Foto {idx + 1}</span>
+                    </div>
+                  }
+                />
+              );
+            })}
           </div>
 
           {/* Analysis Button */}
