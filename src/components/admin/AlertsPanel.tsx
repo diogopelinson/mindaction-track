@@ -22,8 +22,11 @@ const AlertsPanel = ({ mentees, onSelectMentee }: AlertsPanelProps) => {
     const alerts: Alert[] = [];
 
     mentees.forEach(({ mentee, status }) => {
+      const updates = mentee.updates || [];
+      
       // URGENTE: > 14 dias sem check-in OU 3+ semanas zona vermelha
-      if (status.lastUpdateDaysAgo > 14) {
+      // (apenas se já tem pelo menos 1 check-in)
+      if (status.lastUpdateDaysAgo > 14 && updates.length > 0) {
         alerts.push({
           menteeId: mentee.id,
           menteeName: mentee.full_name,
@@ -34,7 +37,6 @@ const AlertsPanel = ({ mentees, onSelectMentee }: AlertsPanelProps) => {
       }
 
       // Verificar 3+ semanas em zona vermelha
-      const updates = mentee.updates || [];
       if (updates.length >= 3) {
         const sortedUpdates = [...updates].sort((a, b) => b.week_number - a.week_number);
         let redZoneStreak = 0;
@@ -63,7 +65,8 @@ const AlertsPanel = ({ mentees, onSelectMentee }: AlertsPanelProps) => {
       }
 
       // ALTA: 7-14 dias sem check-in OU 2 semanas zona vermelha
-      if (status.lastUpdateDaysAgo >= 7 && status.lastUpdateDaysAgo <= 14) {
+      // (apenas se já tem pelo menos 1 check-in)
+      if (status.lastUpdateDaysAgo >= 7 && status.lastUpdateDaysAgo <= 14 && updates.length > 0) {
         alerts.push({
           menteeId: mentee.id,
           menteeName: mentee.full_name,
