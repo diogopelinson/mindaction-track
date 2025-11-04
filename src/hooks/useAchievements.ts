@@ -118,7 +118,11 @@ export const BADGE_INFO = {
 export const useAchievements = () => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shownNotifications, setShownNotifications] = useState<Set<string>>(new Set());
+  const [shownNotifications, setShownNotifications] = useState<Set<string>>(() => {
+    // Carregar notificações já mostradas do sessionStorage
+    const stored = sessionStorage.getItem('shownAchievementNotifications');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
   const { toast } = useToast();
 
   const fetchAchievements = async () => {
@@ -366,7 +370,25 @@ export const useAchievements = () => {
     fetchAchievements();
   }, []);
 
-  // Mostrar toasts apenas para conquistas recentes (últimos 10 segundos)
+  // Sincronizar shownNotifications com sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(
+      'shownAchievementNotifications',
+      JSON.stringify(Array.from(shownNotifications))
+    );
+  }, [shownNotifications]);
+
+  // Limpar sessionStorage ao fechar navegador/aba
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.removeItem('shownAchievementNotifications');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Mostrar toasts apenas para conquistas MUITO recentes (últimos 5 segundos)
   useEffect(() => {
     if (achievements.length === 0) return;
     
@@ -374,7 +396,7 @@ export const useAchievements = () => {
       const earnedAt = new Date(a.earned_at);
       const now = new Date();
       const diffSeconds = (now.getTime() - earnedAt.getTime()) / 1000;
-      return diffSeconds < 10;
+      return diffSeconds < 5; // Reduzido de 10 para 5 segundos
     });
 
     for (const achievement of recentAchievements) {

@@ -347,22 +347,32 @@ const History = () => {
 
       {/* Image Lightbox */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full p-0 overflow-auto bg-black/95">
           <DialogTitle className="sr-only">Visualização ampliada da foto</DialogTitle>
           <button
             onClick={() => setSelectedImage(null)}
-            className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+            className="absolute top-4 right-4 z-50 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-colors"
             aria-label="Fechar"
           >
             <X className="h-6 w-6" />
           </button>
-          {selectedImage && (
-            <img
-              src={selectedImage}
-              alt="Visualização ampliada"
-              className="w-full h-auto max-h-[90vh] object-contain"
-            />
-          )}
+          <div className="flex items-center justify-center min-h-[90vh] p-4">
+            {selectedImage && (
+              <SecureImage
+                bucket="weekly-photos"
+                path={selectedImage.match(/([a-f0-9-]+\/[^?]+)/)?.[1] || selectedImage}
+                alt="Visualização ampliada"
+                className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg"
+                fallback={
+                  <img
+                    src={selectedImage}
+                    alt="Visualização ampliada"
+                    className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded-lg"
+                  />
+                }
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
