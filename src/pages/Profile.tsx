@@ -320,7 +320,7 @@ const Profile = () => {
 
               {/* Name and Email */}
               <div className="space-y-2">
-                <h2 className="text-3xl font-bebas tracking-wider flex items-center gap-2">
+                <h2 className="text-3xl font-bebas tracking-wider flex items-center justify-center gap-2">
                   {profile.full_name}
                   <Sparkles className="h-5 w-5 text-primary animate-pulse" />
                 </h2>
@@ -329,16 +329,16 @@ const Profile = () => {
                   {profile.email}
                 </p>
                 <div className="flex gap-2 justify-center items-center mt-3 flex-wrap">
-                  <Badge variant="outline" className="bg-primary/10 border-primary/20 whitespace-nowrap px-3 py-1">
+                  <Badge variant="outline" className="h-8 inline-flex items-center bg-primary/10 border-primary/20 whitespace-nowrap px-3">
                     {profile.goal_type === 'perda_peso' ? '🔥 Perda de Peso' : '💪 Ganho de Massa'}
                   </Badge>
-                  <Badge variant="outline" className="bg-accent/10 border-accent/20 whitespace-nowrap px-3 py-1">
+                  <Badge variant="outline" className="h-8 inline-flex items-center bg-accent/10 border-accent/20 whitespace-nowrap px-3">
                     {profile.sex === 'male' ? '👨 Masculino' : '👩 Feminino'}
                   </Badge>
                   {profile.level_title && (
                     <Badge 
                       variant="outline" 
-                      className="bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border-yellow-400/30 text-yellow-600 dark:text-yellow-400 font-semibold whitespace-nowrap px-3 py-1"
+                      className="h-8 inline-flex items-center bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border-yellow-400/30 text-yellow-600 dark:text-yellow-400 font-semibold whitespace-nowrap px-3"
                     >
                       🏆 {profile.level_title} - Nível {profile.current_level}
                     </Badge>
