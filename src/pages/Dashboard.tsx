@@ -16,7 +16,6 @@ import ProgressRing from "@/components/ProgressRing";
 import AIProgressInsights from "@/components/AIProgressInsights";
 import GoalPrediction from "@/components/GoalPrediction";
 import PatternDetection from "@/components/PatternDetection";
-import { AchievementsDisplay } from "@/components/AchievementsDisplay";
 import { IntermediateGoals } from "@/components/IntermediateGoals";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAchievements } from "@/hooks/useAchievements";
@@ -24,6 +23,8 @@ import { useXPSystem } from "@/hooks/useXPSystem";
 import { XPCard } from "@/components/XPCard";
 import { LevelUpModal } from "@/components/LevelUpModal";
 import { XPCounter } from "@/components/XPCounter";
+import { WeeklyChallenges } from "@/components/WeeklyChallenges";
+import { GamificationStats } from "@/components/GamificationStats";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 
@@ -360,9 +361,18 @@ const Dashboard = () => {
           />
         )}
 
-        {/* Achievements - Show compact version */}
+        {/* Weekly Challenge */}
         {allUpdates.length > 0 && (
-          <AchievementsDisplay compact />
+          <WeeklyChallenges />
+        )}
+
+        {/* Gamification Stats */}
+        {allUpdates.length > 0 && userXP && (
+          <GamificationStats
+            checkInCount={checkInCount}
+            greenStreak={greenStreak}
+            totalXP={userXP.total_xp}
+          />
         )}
 
         {/* Intermediate Goals */}
