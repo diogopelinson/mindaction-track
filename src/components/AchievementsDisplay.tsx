@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAchievements, BADGE_INFO } from "@/hooks/useAchievements";
+import { useAchievements, BADGE_INFO, getRarityBorderColor, getRarityLabel, type BadgeRarity } from "@/hooks/useAchievements";
 import { Trophy, Lock, Target, Zap, Award } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -68,6 +68,9 @@ export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProp
     if (!badge) return null;
     
     const isEarned = earnedBadges.includes(badgeType);
+    const rarity = badge.rarity;
+    const borderColor = getRarityBorderColor(rarity);
+    const rarityLabel = getRarityLabel(rarity);
 
     return (
       <motion.div
@@ -78,7 +81,7 @@ export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProp
         transition={{ duration: 0.2 }}
         className={`relative p-4 rounded-xl border-2 transition-all duration-300 ${
           isEarned
-            ? 'border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 hover:shadow-lg hover:border-primary/80'
+            ? `${borderColor} bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 hover:shadow-lg`
             : 'border-muted/50 bg-muted/20 opacity-60 hover:opacity-80 hover:border-muted'
         }`}
       >
@@ -99,6 +102,19 @@ export const AchievementsDisplay = ({ compact = false }: AchievementsDisplayProp
             <p className="text-xs text-muted-foreground leading-relaxed">
               {badge.description}
             </p>
+            {isEarned && (
+              <Badge 
+                variant="outline" 
+                className={`mt-2 text-xs ${
+                  rarity === 'legendary' ? 'border-yellow-400 text-yellow-400' :
+                  rarity === 'epic' ? 'border-purple-400 text-purple-400' :
+                  rarity === 'rare' ? 'border-blue-400 text-blue-400' :
+                  'border-slate-400 text-slate-400'
+                }`}
+              >
+                {rarityLabel}
+              </Badge>
+            )}
           </div>
         </div>
         

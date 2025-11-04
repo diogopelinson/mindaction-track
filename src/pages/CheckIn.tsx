@@ -14,10 +14,12 @@ import { CheckInTutorial } from "@/components/CheckInTutorial";
 import { BodyFatGuide } from "@/components/BodyFatGuide";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { checkInSchema } from "@/lib/validationSchemas";
+import { useXPSystem } from "@/hooks/useXPSystem";
 
 const CheckIn = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addXP } = useXPSystem();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [weekNumber, setWeekNumber] = useState(1);
@@ -220,6 +222,14 @@ const CheckIn = () => {
         resourceType: 'weekly_update',
         details: { week_number: weekNumber, weight, has_photos: photoUrls.length > 0 }
       });
+
+      // Adicionar XP pelo check-in
+      await addXP('checkin');
+      
+      // Bônus de XP se enviou foto
+      if (photoUrls.length > 0) {
+        await addXP('photo_bonus');
+      }
 
       toast({
         title: "Check-in realizado com sucesso!",

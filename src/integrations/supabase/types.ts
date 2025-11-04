@@ -465,6 +465,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_xp: {
+        Row: {
+          created_at: string
+          current_level: number
+          id: string
+          total_xp: number
+          updated_at: string
+          user_id: string
+          xp_to_next_level: number
+        }
+        Insert: {
+          created_at?: string
+          current_level?: number
+          id?: string
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          xp_to_next_level?: number
+        }
+        Update: {
+          created_at?: string
+          current_level?: number
+          id?: string
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          xp_to_next_level?: number
+        }
+        Relationships: []
+      }
+      weekly_challenges: {
+        Row: {
+          challenge_type: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          user_id: string
+          week_number: number
+          xp_reward: number
+        }
+        Insert: {
+          challenge_type: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+          week_number: number
+          xp_reward: number
+        }
+        Update: {
+          challenge_type?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+          week_number?: number
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       weekly_updates: {
         Row: {
           body_fat_percentage: number | null
@@ -517,6 +580,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      xp_history: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string | null
+          id: string
+          user_id: string
+          xp_gained: number
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id: string
+          xp_gained: number
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id?: string
+          xp_gained?: number
+        }
+        Relationships: []
       }
     }
     Views: {

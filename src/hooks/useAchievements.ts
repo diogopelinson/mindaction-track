@@ -11,107 +11,165 @@ export interface Achievement {
   milestone_value?: number;
 }
 
-export const BADGE_INFO = {
+export type BadgeRarity = "common" | "rare" | "epic" | "legendary";
+
+interface BadgeInfo {
+  name: string;
+  description: string;
+  icon: string;
+  rarity: BadgeRarity;
+}
+
+export const getRarityColor = (rarity: BadgeRarity): string => {
+  const colors = {
+    common: "from-slate-400 to-slate-600",
+    rare: "from-blue-400 to-blue-600",
+    epic: "from-purple-400 to-purple-600",
+    legendary: "from-yellow-400 to-yellow-600",
+  };
+  return colors[rarity];
+};
+
+export const getRarityBorderColor = (rarity: BadgeRarity): string => {
+  const colors = {
+    common: "border-slate-400/50",
+    rare: "border-blue-400/50",
+    epic: "border-purple-400/50",
+    legendary: "border-yellow-400/50 shadow-yellow-400/20 shadow-lg",
+  };
+  return colors[rarity];
+};
+
+export const getRarityLabel = (rarity: BadgeRarity): string => {
+  const labels = {
+    common: "Comum",
+    rare: "Raro",
+    epic: "Épico",
+    legendary: "Lendário",
+  };
+  return labels[rarity];
+};
+
+export const BADGE_INFO: Record<string, BadgeInfo> = {
   first_checkin: {
     name: 'Primeira Semana',
     description: 'Completou seu primeiro check-in',
     icon: '🎯',
+    rarity: 'common',
   },
   consistency_4weeks: {
     name: 'Consistência Bronze',
     description: '4 semanas consecutivas',
     icon: '🥉',
+    rarity: 'common',
   },
   consistency_12weeks: {
     name: 'Consistência Prata',
     description: '12 semanas consecutivas',
     icon: '🥈',
+    rarity: 'rare',
   },
   consistency_24weeks: {
     name: 'Consistência Ouro',
     description: '24 semanas consecutivas',
     icon: '🥇',
+    rarity: 'epic',
   },
   weight_milestone_5kg: {
     name: 'Milestone 5kg',
     description: 'Perdeu ou ganhou 5kg',
     icon: '💪',
+    rarity: 'rare',
   },
   weight_milestone_10kg: {
     name: 'Milestone 10kg',
     description: 'Perdeu ou ganhou 10kg',
     icon: '🔥',
+    rarity: 'epic',
   },
   body_fat_5percent: {
     name: 'Gordura -5%',
     description: 'Reduziu 5% de gordura corporal',
     icon: '📉',
+    rarity: 'rare',
   },
   green_zone_4weeks: {
     name: 'Zona Verde',
     description: '4 semanas na zona verde',
     icon: '🟢',
+    rarity: 'common',
   },
   halfway_hero: {
     name: 'Metade do Caminho',
     description: 'Atingiu 50% da meta',
     icon: '⭐',
+    rarity: 'rare',
   },
   goal_achieved: {
     name: 'Meta Conquistada!',
     description: 'Completou sua meta final',
     icon: '🏆',
+    rarity: 'legendary',
   },
   photo_champion: {
     name: 'Campeão das Fotos',
     description: '10 check-ins com fotos completas',
     icon: '📸',
+    rarity: 'rare',
   },
-  // Novas conquistas de gamificação
   green_streak_3: {
     name: 'Sequência Verde',
     description: '3 semanas consecutivas na zona verde',
     icon: '🌿',
+    rarity: 'common',
   },
   green_streak_5: {
     name: 'Dominância Verde',
     description: '5 semanas consecutivas na zona verde',
     icon: '🍀',
+    rarity: 'rare',
   },
   green_streak_10: {
     name: 'Mestre Verde',
     description: '10 semanas consecutivas na zona verde',
     icon: '💚',
+    rarity: 'epic',
   },
   perfect_streak_4: {
     name: 'Streak Perfeito',
     description: '4 check-ins semanais consecutivos',
     icon: '🔥',
+    rarity: 'legendary',
   },
   no_red_8: {
     name: 'Evolução Constante',
     description: '8 semanas sem entrar na zona vermelha',
     icon: '📈',
+    rarity: 'rare',
   },
   comeback: {
     name: 'Resiliência',
     description: 'Voltou à zona verde após 2 semanas vermelhas',
     icon: '💪',
+    rarity: 'common',
   },
   first_green: {
     name: 'Primeira Vitória',
     description: 'Primeira semana na zona verde',
     icon: '⭐',
+    rarity: 'common',
   },
   diamond_12: {
     name: 'Diamante',
     description: '12 semanas na zona verde',
     icon: '💎',
+    rarity: 'epic',
   },
   precision_5: {
     name: 'Precisão Cirúrgica',
     description: '5 check-ins no peso projetado (±0.1kg)',
     icon: '🎯',
+    rarity: 'legendary',
   },
 };
 

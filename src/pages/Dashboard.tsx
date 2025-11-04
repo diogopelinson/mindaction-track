@@ -20,6 +20,10 @@ import { AchievementsDisplay } from "@/components/AchievementsDisplay";
 import { IntermediateGoals } from "@/components/IntermediateGoals";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAchievements } from "@/hooks/useAchievements";
+import { useXPSystem } from "@/hooks/useXPSystem";
+import { XPCard } from "@/components/XPCard";
+import { LevelUpModal } from "@/components/LevelUpModal";
+import { XPCounter } from "@/components/XPCounter";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 
@@ -32,6 +36,7 @@ const Dashboard = () => {
   const [allUpdates, setAllUpdates] = useState<any[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
   const { checkAndAwardAchievements } = useAchievements();
+  const { userXP, loading: xpLoading, getXPProgress, getXPInCurrentLevel, showLevelUp, setShowLevelUp, recentXP } = useXPSystem();
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
   const [greenStreak, setGreenStreak] = useState(0);
@@ -343,6 +348,18 @@ const Dashboard = () => {
           </Card>
         )}
 
+        {/* XP and Level Card */}
+        {userXP && (
+          <XPCard
+            totalXP={userXP.total_xp}
+            currentLevel={userXP.current_level}
+            xpProgress={getXPProgress()}
+            xpInCurrentLevel={getXPInCurrentLevel()}
+            xpToNextLevel={userXP.xp_to_next_level}
+            loading={xpLoading}
+          />
+        )}
+
         {/* Achievements - Show compact version */}
         {allUpdates.length > 0 && (
           <AchievementsDisplay compact />
@@ -559,6 +576,24 @@ const Dashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Level Up Modal */}
+      {userXP && (
+        <LevelUpModal
+          open={showLevelUp}
+          onClose={() => setShowLevelUp(false)}
+          level={userXP.current_level}
+        />
+      )}
+
+      {/* XP Counter for recent XP gains */}
+      {recentXP && (
+        <XPCounter
+          xp={recentXP.xp}
+          description={recentXP.description}
+          show={!!recentXP}
+        />
+      )}
 
       <BottomNav />
     </div>
