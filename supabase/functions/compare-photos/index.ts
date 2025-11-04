@@ -13,27 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    // Verify JWT and check admin role
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
+    const { photoPaths, weekNumber } = await req.json();
+    
+    // Create Supabase client with service role for storage access
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { photoPaths, weekNumber } = await req.json();
 
     // Input validation
     if (!Array.isArray(photoPaths)) {
