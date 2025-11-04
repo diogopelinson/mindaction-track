@@ -329,16 +329,16 @@ const Profile = () => {
                   {profile.email}
                 </p>
                 <div className="flex gap-2 justify-center items-center mt-3 flex-wrap">
-                  <Badge variant="outline" className="bg-primary/10 border-primary/20 whitespace-nowrap">
+                  <Badge variant="outline" className="bg-primary/10 border-primary/20 whitespace-nowrap px-3 py-1">
                     {profile.goal_type === 'perda_peso' ? '🔥 Perda de Peso' : '💪 Ganho de Massa'}
                   </Badge>
-                  <Badge variant="outline" className="bg-accent/10 border-accent/20 whitespace-nowrap">
+                  <Badge variant="outline" className="bg-accent/10 border-accent/20 whitespace-nowrap px-3 py-1">
                     {profile.sex === 'male' ? '👨 Masculino' : '👩 Feminino'}
                   </Badge>
                   {profile.level_title && (
                     <Badge 
                       variant="outline" 
-                      className="bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border-yellow-400/30 text-yellow-600 dark:text-yellow-400 font-semibold whitespace-nowrap"
+                      className="bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border-yellow-400/30 text-yellow-600 dark:text-yellow-400 font-semibold whitespace-nowrap px-3 py-1"
                     >
                       🏆 {profile.level_title} - Nível {profile.current_level}
                     </Badge>
