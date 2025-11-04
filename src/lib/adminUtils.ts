@@ -14,6 +14,8 @@ export interface MenteeData {
   phone?: string;
   cpf?: string;
   avatar_url?: string;
+  level_title?: string;
+  current_level?: number;
   updates?: WeeklyUpdate[];
 }
 

@@ -26,7 +26,6 @@ import { XPCounter } from "@/components/XPCounter";
 import { BadgeUnlockModal } from "@/components/BadgeUnlockModal";
 import { WeeklyChallenges } from "@/components/WeeklyChallenges";
 import { GamificationStats } from "@/components/GamificationStats";
-import { RewardsPanel } from "@/components/RewardsPanel";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 
@@ -262,7 +261,17 @@ const Dashboard = () => {
             <img src={logo} alt="Logo" className="h-16" />
             <div>
               <h1 className="text-2xl font-bebas">Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
-              <p className="text-sm text-muted-foreground">Bem-vindo ao Mapa MindFitness</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm text-muted-foreground">Bem-vindo ao Mapa MindFitness</p>
+                {profile?.level_title && (
+                  <Badge 
+                    variant="outline" 
+                    className="bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border-yellow-400/30 text-yellow-600 dark:text-yellow-400 text-xs"
+                  >
+                    🏆 {profile.level_title} - Nível {profile.current_level}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <ThemeToggle />
@@ -382,16 +391,6 @@ const Dashboard = () => {
             checkInCount={checkInCount}
             greenStreak={greenStreak}
             totalXP={userXP.total_xp}
-          />
-        )}
-
-        {/* Rewards Panel */}
-        {allUpdates.length > 0 && userXP && (
-          <RewardsPanel
-            currentLevel={userXP.current_level}
-            xpToNextLevel={getXPInCurrentLevel()}
-            checkInCount={checkInCount}
-            greenStreak={greenStreak}
           />
         )}
 

@@ -319,6 +319,7 @@ export type Database = {
           avatar_url: string | null
           cpf: string | null
           created_at: string
+          current_level: number | null
           email: string
           full_name: string
           goal_subtype: string | null
@@ -326,6 +327,7 @@ export type Database = {
           height: number
           id: string
           initial_weight: number
+          level_title: string | null
           phone: string | null
           sex: Database["public"]["Enums"]["user_sex"]
           target_weight: number | null
@@ -336,6 +338,7 @@ export type Database = {
           avatar_url?: string | null
           cpf?: string | null
           created_at?: string
+          current_level?: number | null
           email: string
           full_name: string
           goal_subtype?: string | null
@@ -343,6 +346,7 @@ export type Database = {
           height: number
           id: string
           initial_weight: number
+          level_title?: string | null
           phone?: string | null
           sex: Database["public"]["Enums"]["user_sex"]
           target_weight?: number | null
@@ -353,6 +357,7 @@ export type Database = {
           avatar_url?: string | null
           cpf?: string | null
           created_at?: string
+          current_level?: number | null
           email?: string
           full_name?: string
           goal_subtype?: string | null
@@ -360,6 +365,7 @@ export type Database = {
           height?: number
           id?: string
           initial_weight?: number
+          level_title?: string | null
           phone?: string | null
           sex?: Database["public"]["Enums"]["user_sex"]
           target_weight?: number | null

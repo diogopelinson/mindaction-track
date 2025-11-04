@@ -128,6 +128,22 @@ export function useXPSystem() {
 
       if (updateError) throw updateError;
 
+      // If leveled up, update profile with new level and title
+      if (leveledUp) {
+        const newTitle = getLevelTitle(newLevel);
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            current_level: newLevel,
+            level_title: newTitle,
+          })
+          .eq("id", user.id);
+
+        if (profileError) {
+          console.error("Error updating profile level:", profileError);
+        }
+      }
+
       // Insert into xp_history
       const description = customDescription || getActionDescription(actionType);
       const { error: historyError } = await supabase

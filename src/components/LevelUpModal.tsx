@@ -88,11 +88,11 @@ export function LevelUpModal({ open, onClose, level }: LevelUpModalProps) {
               <div className="flex justify-center gap-4">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-400" />
-                  <span className="text-sm">Novo título</span>
+                  <span className="text-sm">Novo título: {title}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-primary" />
-                  <span className="text-sm">Conquistas especiais</span>
+                  <span className="text-sm">Badge no perfil</span>
                 </div>
               </div>
             </motion.div>

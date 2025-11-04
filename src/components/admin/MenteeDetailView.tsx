@@ -97,6 +97,14 @@ const MenteeDetailView = ({ mentee, status, onBack }: MenteeDetailViewProps) => 
             <div>
               <h1 className="text-2xl font-bebas">{mentee.full_name}</h1>
               <p className="text-sm text-muted-foreground">{mentee.email}</p>
+              {mentee.level_title && (
+                <Badge 
+                  variant="outline" 
+                  className="mt-1 bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border-yellow-400/30 text-yellow-600 dark:text-yellow-400 text-xs"
+                >
+                  🏆 {mentee.level_title} - Nível {mentee.current_level}
+                </Badge>
+              )}
             </div>
             <Badge className={getZoneColor(status.currentZone)}>
               {getZoneLabel(status.currentZone)}
