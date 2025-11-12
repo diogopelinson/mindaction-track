@@ -277,13 +277,8 @@ const CreateMentee = () => {
                     placeholder="70.0"
                     min="30"
                     max="300"
-                    value={initialWeight}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (!isNaN(value) && value > 0) {
-                        setInitialWeight(value);
-                      }
-                    }}
+                    value={initialWeight || ''}
+                    onChange={(e) => setInitialWeight(parseFloat(e.target.value) || 0)}
                     required
                   />
                 </div>
