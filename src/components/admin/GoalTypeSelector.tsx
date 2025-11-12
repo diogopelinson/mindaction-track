@@ -30,15 +30,15 @@ const GoalTypeSelector = ({ value, onChange }: GoalTypeSelectorProps) => {
                   <div className="flex gap-4 mt-2">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-success"></div>
-                      <span className="text-xs">Verde: 0,50% - 0,75%</span>
+                      <span className="text-xs">Verde: 0,75% - 1%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-warning"></div>
-                      <span className="text-xs">Amarela: 0,25% - 0,50%</span>
+                      <span className="text-xs">Amarela: 0,50% - 0,75%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-danger"></div>
-                      <span className="text-xs">Vermelha: &lt;0,25% ou &gt;0,75%</span>
+                      <span className="text-xs">Vermelha: &lt;0,50% ou &gt;1%</span>
                     </div>
                   </div>
                 </div>

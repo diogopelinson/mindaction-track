@@ -49,12 +49,12 @@ export const getZoneConfig = (
       // Perda de Peso MODERADA: 0,25% | 0,35% | 0,50%
       return { yellowMin: 0.25, greenMin: 0.35, greenMax: 0.50 };
     }
-    // Perda de Peso PADRÃO: 0,25% | 0,50% | 0,75%
-    return { yellowMin: 0.25, greenMin: 0.50, greenMax: 0.75 };
+    // Perda de Peso PADRÃO: 0,50% | 0,75% | 1,00%
+    return { yellowMin: 0.50, greenMin: 0.75, greenMax: 1.00 };
   }
   
   // Fallback para padrão
-  return { yellowMin: 0.25, greenMin: 0.50, greenMax: 0.75 };
+  return { yellowMin: 0.50, greenMin: 0.75, greenMax: 1.00 };
 };
 
 /**
@@ -103,6 +103,44 @@ export const calculateWeeklyZone = (
     } else {
       return 'red'; // Muito pouco ou muito peso ganho
     }
+  }
+};
+
+/**
+ * Calcula o peso de manutenção (peso atingido na semana 18)
+ */
+export const calculateMaintenanceWeight = (
+  updates: WeeklyUpdate[]
+): number | null => {
+  const week18Update = updates.find(u => u.week_number === 18);
+  return week18Update ? week18Update.weight : null;
+};
+
+/**
+ * Determina se uma semana está na fase de manutenção (19-24)
+ */
+export const isMaintenancePhase = (weekNumber: number): boolean => {
+  return weekNumber >= 19 && weekNumber <= 24;
+};
+
+/**
+ * Calcula a zona para fase de manutenção
+ * Zona Verde: ±1% do peso da semana 18
+ * Zona Amarela: ±1% a ±2% do peso da semana 18
+ * Zona Vermelha: >±2% do peso da semana 18
+ */
+export const calculateMaintenanceZone = (
+  currentWeight: number,
+  maintenanceWeight: number
+): Zone => {
+  const changePercent = Math.abs(((currentWeight - maintenanceWeight) / maintenanceWeight) * 100);
+  
+  if (changePercent <= 1) {
+    return 'green'; // Mantendo bem o peso
+  } else if (changePercent <= 2) {
+    return 'yellow'; // Variação moderada
+  } else {
+    return 'red'; // Variação excessiva
   }
 };
 

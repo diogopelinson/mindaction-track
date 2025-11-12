@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getZoneConfig, calculateWeeklyZoneByLimits } from "@/lib/progressUtils";
+import { getZoneConfig, calculateWeeklyZoneByLimits, isMaintenancePhase, calculateMaintenanceZone } from "@/lib/progressUtils";
 import type { WeeklyUpdate, Zone } from "@/lib/progressUtils";
 
 interface WeightProjectionTableProps {
@@ -24,25 +24,39 @@ const WeightProjectionTable = ({
   const greenMinKg = (initialWeight * config.greenMin) / 100;
   const greenMaxKg = (initialWeight * config.greenMax) / 100;
 
+  // Encontrar peso da semana 18 para cálculo de manutenção
+  const week18Update = weeklyUpdates.find(u => u.week_number === 18);
+  const maintenanceWeight = week18Update ? week18Update.weight : null;
+
   // Gerar 24 semanas de projeção
   const weeks = Array.from({ length: 24 }, (_, i) => {
     const weekNumber = i + 1;
+    const isMaintenance = isMaintenancePhase(weekNumber);
     
     // Cálculos cumulativos a partir do peso inicial
     let limInf: number;
     let projetado: number;
     let maxAting: number;
 
-    if (goalType === 'ganho_massa') {
-      // Ganho de massa: adicionar progressivamente
-      limInf = initialWeight + (yellowPercentKg * weekNumber);
-      projetado = initialWeight + (greenMinKg * weekNumber);
-      maxAting = initialWeight + (greenMaxKg * weekNumber);
+    if (isMaintenance && maintenanceWeight) {
+      // FASE DE MANUTENÇÃO (Semanas 19-24)
+      // Usar peso da semana 18 como referência
+      projetado = maintenanceWeight; // Peso ideal = peso da semana 18
+      limInf = maintenanceWeight * 0.99; // -1%
+      maxAting = maintenanceWeight * 1.01; // +1%
     } else {
-      // Perda de peso: subtrair progressivamente
-      limInf = initialWeight - (yellowPercentKg * weekNumber);
-      projetado = initialWeight - (greenMinKg * weekNumber);
-      maxAting = initialWeight - (greenMaxKg * weekNumber);
+      // FASE DE PROGRESSÃO (Semanas 1-18)
+      if (goalType === 'ganho_massa') {
+        // Ganho de massa: adicionar progressivamente
+        limInf = initialWeight + (yellowPercentKg * weekNumber);
+        projetado = initialWeight + (greenMinKg * weekNumber);
+        maxAting = initialWeight + (greenMaxKg * weekNumber);
+      } else {
+        // Perda de peso: subtrair progressivamente
+        limInf = initialWeight - (yellowPercentKg * weekNumber);
+        projetado = initialWeight - (greenMinKg * weekNumber);
+        maxAting = initialWeight - (greenMaxKg * weekNumber);
+      }
     }
 
     // Buscar peso atual se existir check-in para essa semana
@@ -53,16 +67,21 @@ const WeightProjectionTable = ({
     const isCompleted = !!pesoAtual;
 
     // Calcular zona real se tiver peso atual
-    // USANDO A NOVA FUNÇÃO que compara com os limites da semana específica
     let zone: Zone | null = null;
     if (pesoAtual) {
-      zone = calculateWeeklyZoneByLimits(
-        pesoAtual,
-        parseFloat(limInf.toFixed(1)),
-        parseFloat(projetado.toFixed(1)),
-        parseFloat(maxAting.toFixed(1)),
-        goalType
-      );
+      if (isMaintenance && maintenanceWeight) {
+        // Usar lógica de manutenção
+        zone = calculateMaintenanceZone(pesoAtual, maintenanceWeight);
+      } else {
+        // Usar lógica de progressão
+        zone = calculateWeeklyZoneByLimits(
+          pesoAtual,
+          parseFloat(limInf.toFixed(1)),
+          parseFloat(projetado.toFixed(1)),
+          parseFloat(maxAting.toFixed(1)),
+          goalType
+        );
+      }
     }
 
     return {
@@ -73,6 +92,7 @@ const WeightProjectionTable = ({
       pesoAtual: pesoAtual?.toFixed(1),
       isCompleted,
       zone,
+      isMaintenance,
     };
   });
 
@@ -130,7 +150,14 @@ const WeightProjectionTable = ({
                   className={getRowColor(week.zone, week.isCompleted)}
                 >
                   <TableCell className="text-center font-medium">
-                    {week.weekNumber}
+                    <div className="flex items-center justify-center gap-2">
+                      {week.weekNumber}
+                      {week.isMaintenance && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
+                          Manutenção
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">{week.limInf}</TableCell>
                   <TableCell className="text-center font-semibold">{week.projetado}</TableCell>
@@ -170,6 +197,20 @@ const WeightProjectionTable = ({
           <p><span className="inline-block w-4 h-4 bg-warning/20 border-l-4 border-warning rounded mr-2"></span>Zona Amarela - Atenção necessária</p>
           <p><span className="inline-block w-4 h-4 bg-danger/20 border-l-4 border-danger rounded mr-2"></span>Zona Vermelha - Fora do objetivo</p>
           <p><span className="inline-block w-4 h-4 bg-muted/50 border border-border rounded mr-2"></span>Semanas futuras (projeção)</p>
+          
+          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">📅 Estrutura do Programa (24 Semanas)</p>
+            <p className="text-blue-800 dark:text-blue-200">
+              • <strong>Semanas 1-18:</strong> Fase de {goalType === 'perda_peso' ? 'Perda de Peso' : 'Ganho de Massa'}<br/>
+              • <strong>Semanas 19-24:</strong> Fase de Manutenção (manter peso atingido na semana 18)
+            </p>
+            {maintenanceWeight && (
+              <p className="text-blue-800 dark:text-blue-200 mt-2">
+                • <strong>Peso de Manutenção:</strong> {maintenanceWeight.toFixed(1)} kg (±1% = zona verde)
+              </p>
+            )}
+          </div>
+
           <p className="mt-4 font-medium text-foreground">
             • <strong>Lim Inf:</strong> Limite inferior (zona amarela)<br/>
             • <strong>Projetado:</strong> Peso ideal para zona verde<br/>

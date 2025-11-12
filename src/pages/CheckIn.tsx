@@ -374,7 +374,6 @@ const CheckIn = () => {
                     id="front-photo"
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={(e) => setFrontPhoto(e.target.files?.[0] || null)}
                   />
@@ -396,7 +395,6 @@ const CheckIn = () => {
                     id="side-photo"
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={(e) => setSidePhoto(e.target.files?.[0] || null)}
                   />
@@ -418,7 +416,6 @@ const CheckIn = () => {
                     id="back-photo"
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={(e) => setBackPhoto(e.target.files?.[0] || null)}
                   />
