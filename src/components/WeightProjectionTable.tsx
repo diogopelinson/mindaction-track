@@ -159,9 +159,15 @@ const WeightProjectionTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">{week.limInf}</TableCell>
-                  <TableCell className="text-center font-semibold">{week.projetado}</TableCell>
-                  <TableCell className="text-center">{week.maxAting}</TableCell>
+                  <TableCell className="text-center">
+                    {week.isMaintenance ? '-' : week.limInf}
+                  </TableCell>
+                  <TableCell className="text-center font-semibold">
+                    {week.isMaintenance ? '-' : week.projetado}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {week.isMaintenance ? '-' : week.maxAting}
+                  </TableCell>
                   <TableCell className="text-center">
                     {week.pesoAtual ? (
                       <div className="flex items-center justify-center gap-2">
