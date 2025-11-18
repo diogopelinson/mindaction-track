@@ -143,7 +143,7 @@ export const calculateAllWeeklyZones = (
   goal: { 
     goal_type: 'perda_peso' | 'ganho_massa'; 
     weekly_variation_percent?: number;
-    goal_subtype?: 'padrao' | 'moderada' | 'standard';
+    goal_subtype?: 'padrao' | 'moderada' | 'avancada' | 'standard';
     initial_weight: number;
   }
 ): WeeklyZoneData[] => {

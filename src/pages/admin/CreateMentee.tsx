@@ -24,6 +24,7 @@ const CreateMentee = () => {
   const calculateTargetWeight = (initial: number, goal: string): number => {
     if (goal === 'ganho_massa') return initial * 1.10; // +10%
     if (goal === 'perda_peso_moderada') return initial * 0.95; // -5%
+    if (goal === 'perda_peso_avancada') return initial * 0.85; // -15%
     return initial * 0.90; // -10% (perda_peso_padrao)
   };
 
@@ -59,7 +60,7 @@ const CreateMentee = () => {
     try {
       // Parse goal type and subtype
       let goalTypeValue: 'perda_peso' | 'ganho_massa' = 'perda_peso';
-      let goalSubtype: 'padrao' | 'moderada' | 'standard' = 'padrao';
+      let goalSubtype: 'padrao' | 'moderada' | 'avancada' | 'standard' = 'padrao';
 
       if (goalType === 'ganho_massa') {
         goalTypeValue = 'ganho_massa';
@@ -67,6 +68,9 @@ const CreateMentee = () => {
       } else if (goalType === 'perda_peso_moderada') {
         goalTypeValue = 'perda_peso';
         goalSubtype = 'moderada';
+      } else if (goalType === 'perda_peso_avancada') {
+        goalTypeValue = 'perda_peso';
+        goalSubtype = 'avancada';
       } else {
         goalTypeValue = 'perda_peso';
         goalSubtype = 'padrao';
@@ -121,9 +125,10 @@ const CreateMentee = () => {
     return goalType === 'ganho_massa' ? 'ganho_massa' : 'perda_peso';
   };
 
-  const getGoalSubtypeForExplainer = (): 'padrao' | 'moderada' | 'standard' => {
+  const getGoalSubtypeForExplainer = (): 'padrao' | 'moderada' | 'avancada' | 'standard' => {
     if (goalType === 'ganho_massa') return 'standard';
     if (goalType === 'perda_peso_moderada') return 'moderada';
+    if (goalType === 'perda_peso_avancada') return 'avancada';
     return 'padrao';
   };
 
