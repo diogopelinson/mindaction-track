@@ -37,6 +37,7 @@ const ZoneExplainer = ({ goalType, goalSubtype, initialWeight, targetWeight }: Z
   const getGoalTypeName = () => {
     if (goalType === 'ganho_massa') return 'Ganho de Massa';
     if (goalSubtype === 'moderada') return 'Perda de Peso - Moderada';
+    if (goalSubtype === 'avancada') return 'Perda de Peso - Avançada';
     return 'Perda de Peso - Padrão';
   };
 

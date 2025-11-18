@@ -23,7 +23,7 @@ export interface Goal {
 
 export type Zone = 'green' | 'yellow' | 'red';
 
-export type GoalSubtype = 'padrao' | 'moderada' | 'standard';
+export type GoalSubtype = 'padrao' | 'moderada' | 'avancada' | 'standard';
 
 export interface ZoneConfig {
   yellowMin: number;  // 0.25
@@ -49,12 +49,16 @@ export const getZoneConfig = (
       // Perda de Peso MODERADA: 0,25% | 0,35% | 0,50%
       return { yellowMin: 0.25, greenMin: 0.35, greenMax: 0.50 };
     }
-    // Perda de Peso PADRÃO: 0,50% | 0,75% | 1,00%
-    return { yellowMin: 0.50, greenMin: 0.75, greenMax: 1.00 };
+    if (subtype === 'avancada') {
+      // Perda de Peso AVANÇADA: 0,50% | 0,75% | 1,00%
+      return { yellowMin: 0.50, greenMin: 0.75, greenMax: 1.00 };
+    }
+    // Perda de Peso PADRÃO (NOVO): 0,25% | 0,50% | 0,75%
+    return { yellowMin: 0.25, greenMin: 0.50, greenMax: 0.75 };
   }
   
-  // Fallback para padrão
-  return { yellowMin: 0.50, greenMin: 0.75, greenMax: 1.00 };
+  // Fallback para padrão novo
+  return { yellowMin: 0.25, greenMin: 0.50, greenMax: 0.75 };
 };
 
 /**

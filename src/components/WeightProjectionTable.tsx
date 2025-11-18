@@ -7,7 +7,7 @@ import type { WeeklyUpdate, Zone } from "@/lib/progressUtils";
 interface WeightProjectionTableProps {
   initialWeight: number;
   goalType: 'perda_peso' | 'ganho_massa';
-  goalSubtype?: 'padrao' | 'moderada' | 'standard';
+  goalSubtype?: 'padrao' | 'moderada' | 'avancada' | 'standard';
   weeklyUpdates: WeeklyUpdate[];
 }
 

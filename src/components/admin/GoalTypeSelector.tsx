@@ -26,19 +26,19 @@ const GoalTypeSelector = ({ value, onChange }: GoalTypeSelectorProps) => {
               <Label htmlFor="perda_padrao" className="cursor-pointer">
                 <div className="font-semibold text-base mb-1">Perda de Peso - Padrão</div>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Ideal para quem quer perder peso de forma acelerada</p>
+                  <p>Ideal para perda de peso equilibrada e sustentável</p>
                   <div className="flex gap-4 mt-2">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-success"></div>
-                      <span className="text-xs">Verde: 0,75% - 1%</span>
+                      <span className="text-xs">Verde: 0,50% - 0,75%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-warning"></div>
-                      <span className="text-xs">Amarela: 0,50% - 0,75%</span>
+                      <span className="text-xs">Amarela: 0,25% - 0,50%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-danger"></div>
-                      <span className="text-xs">Vermelha: &lt;0,50% ou &gt;1%</span>
+                      <span className="text-xs">Vermelha: &lt;0,25% ou &gt;0,75%</span>
                     </div>
                   </div>
                 </div>
@@ -54,7 +54,7 @@ const GoalTypeSelector = ({ value, onChange }: GoalTypeSelectorProps) => {
               <Label htmlFor="perda_moderada" className="cursor-pointer">
                 <div className="font-semibold text-base mb-1">Perda de Peso - Moderada</div>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Ideal para perda de peso mais controlada e sustentável</p>
+                  <p>Ideal para perda de peso mais controlada e gradual</p>
                   <div className="flex gap-4 mt-2">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-success"></div>
@@ -75,6 +75,34 @@ const GoalTypeSelector = ({ value, onChange }: GoalTypeSelectorProps) => {
           </div>
         </Card>
 
+        <Card className={`p-4 cursor-pointer transition-all ${value === 'perda_peso_avancada' ? 'border-primary border-2 bg-primary/5' : 'hover:border-primary/50'}`}>
+          <div className="flex items-start gap-3">
+            <RadioGroupItem value="perda_peso_avancada" id="perda_avancada" className="mt-1" />
+            <div className="flex-1">
+              <Label htmlFor="perda_avancada" className="cursor-pointer">
+                <div className="font-semibold text-base mb-1">Perda de Peso - Avançada</div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Ideal para perda de peso acelerada e intensiva</p>
+                  <div className="flex gap-4 mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-success"></div>
+                      <span className="text-xs">Verde: 0,75% - 1%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-warning"></div>
+                      <span className="text-xs">Amarela: 0,50% - 0,75%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-danger"></div>
+                      <span className="text-xs">Vermelha: &lt;0,50% ou &gt;1%</span>
+                    </div>
+                  </div>
+                </div>
+              </Label>
+            </div>
+          </div>
+        </Card>
+
         <Card className={`p-4 cursor-pointer transition-all ${value === 'ganho_massa' ? 'border-primary border-2 bg-primary/5' : 'hover:border-primary/50'}`}>
           <div className="flex items-start gap-3">
             <RadioGroupItem value="ganho_massa" id="ganho_massa" className="mt-1" />
@@ -82,7 +110,7 @@ const GoalTypeSelector = ({ value, onChange }: GoalTypeSelectorProps) => {
               <Label htmlFor="ganho_massa" className="cursor-pointer">
                 <div className="font-semibold text-base mb-1">Ganho de Massa Muscular</div>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Ideal para hipertrofia e ganho de peso magro</p>
+                  <p>Ideal para hipertrofia e ganho de peso controlado</p>
                   <div className="flex gap-4 mt-2">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-success"></div>
